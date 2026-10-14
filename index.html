@@ -1,0 +1,44 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Beylikdüzü RAM · Okul Risk Haritası</title><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://uftqsvxieizpclpxbejs.supabase.co; base-uri 'self'; form-action 'none'"><style>
+:root{--burgundy:#0b4b6b;--blue:#0084c5;--teal:#009aae;--lime:#9eb000;--ink:#253348;--line:#e4e9ed;--surface:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);background:#f6f8f9}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#eaf5f6 0,#f7f9fa 300px)}main{max-width:880px;margin:28px auto 50px;padding:0 16px}
+header{background:#fff;color:var(--ink);padding:22px 26px;border-radius:20px;box-shadow:0 8px 28px #203a4914;border-top:7px solid var(--burgundy);display:flex;align-items:center;gap:22px}
+header .brand-logo{width:160px;height:160px;object-fit:contain;flex-shrink:0}header h1{margin:0;font-size:25px;color:var(--burgundy);line-height:1.24}header p{margin:9px 0 0;color:#53677a;font-weight:500}
+.brand-rule{height:5px;border-radius:9px;background:linear-gradient(90deg,var(--burgundy) 0 34%,var(--blue) 34% 58%,var(--teal) 58% 80%,var(--lime) 80%);margin:15px 0 0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:25px;margin-top:18px;box-shadow:0 4px 22px #26394a0a}
+h2{margin:0 0 15px;font-size:19px;color:var(--burgundy);padding-left:12px;border-left:4px solid var(--teal)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+label{font-weight:650;font-size:13px;display:block;margin-bottom:7px}input,select{width:100%;border:1px solid #cbd8df;border-radius:10px;padding:12px;font-size:15px;background:#fff;color:var(--ink)}input:focus,select:focus{outline:2px solid #48acb866;outline-offset:1px;border-color:var(--teal)}input:disabled,select:disabled{background:#f3f6f7;color:#53677a}
+.risk{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 11px;border-bottom:1px solid #e9eef1}.risk:nth-child(even){background:#f8fbfb}.risk span{font-size:14px;line-height:1.45}.risk input{max-width:100px;text-align:center;border-color:#bed6dc}
+button{background:var(--burgundy);color:white;border:0;border-radius:11px;padding:14px 22px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 3px 10px #6a00231c}button:hover{background:#850c35}button:disabled{opacity:.5;cursor:wait}#copy{background:var(--blue)}#copy:hover{background:#006ba0}
+.hint{font-size:13px;color:#566c79;line-height:1.6}.result{padding:17px;background:#eaf6f4;border:1px solid #b8dedc;border-radius:12px;word-break:break-all}.hidden{display:none}#msg{margin:14px 0;font-weight:650;color:var(--burgundy);min-height:20px}a{color:var(--blue)}.foot{text-align:center;font-size:12px;color:#667b85;margin:24px 0}
+@media(max-width:550px){main{margin:12px auto 30px}.grid{grid-template-columns:1fr}.panel{padding:17px}header{padding:16px;gap:12px}header .brand-logo{width:82px;height:75px}header h1{font-size:19px}header p{font-size:12px}.risk{gap:10px}.risk input{max-width:77px;padding:10px 5px}}
+@media print{body{background:white}header,.panel{box-shadow:none}button{display:none}}
+
+.report-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.report-actions button{width:auto;flex:1;min-width:170px}
+.report-box{margin-top:18px;border:1px solid #cbd5e1;border-radius:14px;padding:20px;background:#fff}
+.report-box h2,.report-box h3{color:#0b4b6b}
+.report-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:12px 0}
+.report-stat{background:#f0f7f7;padding:12px;border-radius:10px}
+.report-stat strong{display:block;font-size:23px;color:#087b83}
+.report-row{margin:12px 0}
+.report-row-head{display:flex;justify-content:space-between;gap:10px;font-size:14px}
+.report-bar-track{height:15px;border-radius:8px;background:#e8eef2;overflow:hidden;margin-top:5px}
+.report-bar-fill{height:100%;background:linear-gradient(90deg,#0c8992,#0b4b6b);border-radius:8px}
+.report-advice{padding:12px 16px;border-left:4px solid #0c8992;background:#f4f9f9;margin:10px 0}
+.report-note{font-size:13px;color:#596579}
+@media print{
+body{background:#fff!important}
+body>*:not(main){display:none!important}
+main>*:not(#schoolReport){display:none!important}
+#schoolReport{display:block!important;border:0!important;padding:0!important}
+.report-actions,.no-print{display:none!important}
+.report-row,.report-advice{break-inside:avoid}
+}
+[hidden]{display:none!important}main{max-width:1050px}table{width:100%;border-collapse:collapse}th,td{text-align:left;border-bottom:1px solid #ddd;padding:10px;font-size:14px}.scroll{overflow:auto}.toolbar{display:flex;gap:12px;flex-wrap:wrap;margin:16px 0}.notice{padding:16px;background:#eaf6f4;border-radius:10px;line-height:1.6}header .brand-logo{width:160px;height:160px}@media print{#schoolReportContent{display:block!important}}</style></head><body><main><header><img class="brand-logo" src="logo.png" alt="Beylikdüzü Rehberlik ve Araştırma Merkezi — Her Birey, Bir Değer"><div><h1>Beylikdüzü RAM Merkezi Okul Risk Haritası</h1><p>Beylikdüzü Rehberlik ve Araştırma Merkezi · 2026–2027</p></div></header>
+<section class="panel" id="loginPanel"><h2>Öğretmen ve RAM girişi</h2><p class="hint">İlk kullanımda e-posta adresinizle hesap oluşturun ve gelen e-postayı doğrulayın. Öğretmenler okul erişimi için RAM onayı alır. Öğrenci isimleri ve kimlik bilgileri bu uygulamaya girilmez.</p><div class="grid"><div><label for="email">E-posta adresi</label><input id="email" type="email" autocomplete="username"></div><div><label for="password">Şifre</label><input id="password" type="password" autocomplete="current-password" minlength="12"></div></div><div class="toolbar"><button id="login">Giriş yap</button><button id="signup">İlk kez kullanıyorum · Hesap oluştur</button></div></section>
+<section class="panel" id="identityPanel" hidden><p id="identity"></p><div class="toolbar"><button id="refresh">Yenile</button><button id="logout">Çıkış yap</button></div></section>
+<section class="panel"><div id="msg" class="notice" role="status" aria-live="polite">Bağlantı hazırlanıyor…</div></section>
+<section class="panel" id="requestPanel" hidden><h2>Okul erişim isteği</h2><label for="requestSchool">Okulunuz</label><select id="requestSchool"></select><p class="hint">Okulunuzu ve kademesini seçiniz. RAM, öğretmen yetkinizi doğrulayıp onayladığında formu doldurabilirsiniz.</p><button id="requestAccess">Okul erişimi iste</button></section>
+<section class="panel" id="schoolPanel" hidden><h2>Okul geneli formu — 36 gösterge</h2><div class="grid"><div><label for="assignedSchool">Yetkili olduğunuz okul</label><select id="assignedSchool"></select></div><div><label for="period">Eğitim yılı</label><input id="period" value="2026-2027" maxlength="9"></div></div><p class="hint">Aynı öğrenci birden fazla göstergede bulunabilir. Gösterge toplamları tekil öğrenci sayısı değildir. Okul geneli sayıları giriniz; boş alan bırakmayınız.</p><div id="risks"></div><div class="toolbar"><button id="save">RAM'a gönder</button><button id="showSchoolReport">Okul raporunu oluştur</button></div></section>
+<section class="panel" id="adminPanel" hidden><h2>RAM yönetici ekranı</h2><p class="hint">Tüm okul formlarını ve eksik girişleri görebilirsiniz. Kurum kodu çakışması olan kayıtlar kontrol tamamlanana kadar yeni okul başvurularına kapalıdır.</p><div class="grid"><div><label for="adminPeriod">Dönem</label><input id="adminPeriod" value="2026-2027" maxlength="9"></div><div><label for="adminLevel">Kademe</label><select id="adminLevel"><option value="">Tüm kademeler</option><option>Anaokulu</option><option>İlkokul</option><option>Ortaokul</option><option>Lise</option><option>Özel Eğitim</option></select></div><div><label for="adminSearch">Okul adıyla ara</label><input id="adminSearch" type="search"></div></div><p id="adminSummary"></p><button id="districtReport">İlçe raporunu oluştur</button><div class="scroll"><table><thead><tr><th>Okul</th><th>Kademe</th><th>Durum</th><th>İşlem</th></tr></thead><tbody id="adminRows"></tbody></table></div><h2 style="margin-top:24px">Öğretmen erişim istekleri</h2><div id="requests"></div></section>
+<section class="panel" id="schoolReport"><h2>Okul / İlçe raporu</h2><button id="printSchoolReport" class="no-print">Raporu yazdır / PDF kaydet</button><div id="schoolReportContent" class="report-box" hidden></div></section><p class="foot">Beylikdüzü Rehberlik ve Araştırma Merkezi · Her Birey, Bir Değer.</p></main><script src="app.js"></script></body></html>
