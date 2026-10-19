@@ -28,6 +28,27 @@ $('assignedSchool').onchange=()=>loadSchool().catch(e=>message(e.message));$('pe
 $('save').onclick=async()=>{const p=checked();if(!p)return;const b=$('save');b.disabled=true;try{const body={school_id:$('assignedSchool').value,period:p.period,counts:p.counts,updated_by:user.id};const saved=current?await api('/rest/v1/ram_submissions?id=eq.'+current.id+'&version=eq.'+version,{method:'PATCH',body}):await api('/rest/v1/ram_submissions',{method:'POST',body});if(!saved.length)throw Error('Kayıt başka bir girişte değiştirildi. Okulu yeniden seçip güncel formu yükleyiniz.');current=saved[0];version=current.version;message("Kaydınız Beylikdüzü RAM'a ulaştı.");}catch(e){message('Gönderilemedi: '+e.message);}finally{b.disabled=false;}};
 function selectedRecords(){return submissions.filter(r=>r.period===$('adminPeriod').value.trim()&&(!$('adminLevel').value||r.payload.level===$('adminLevel').value));}
 async function renderAdmin(){const period=$('adminPeriod').value.trim(),term=$('adminSearch').value.toLocaleLowerCase('tr-TR'),level=$('adminLevel').value;const list=schools.filter(s=>(!level||s.level===level)&&s.name.toLocaleLowerCase('tr-TR').includes(term));$('adminRows').innerHTML=list.map(s=>{const r=submissions.find(r=>r.school_id===s.id&&r.period===period);return '<tr><td>'+esc(s.name)+'<br><small>'+esc(s.sector)+'</small></td><td>'+esc(s.level)+'</td><td>'+(r?'Geldi':'Bekleniyor')+'</td><td>'+(r?'<button data-report="'+r.id+'">Formu gör</button>':'—')+'</td></tr>';}).join('');document.querySelectorAll('[data-report]').forEach(b=>b.onclick=()=>{const r=submissions.find(x=>x.id===b.dataset.report);reportPayload=r.payload;buildSchoolReport();$('schoolReportContent').scrollIntoView({behavior:'smooth'});});$('adminSummary').textContent='Listede '+list.length+' okul · '+list.filter(s=>submissions.some(r=>r.school_id===s.id&&r.period===period)).length+' form geldi';
+const submitted=submissions.filter(r=>r.period===period&&(!level||r.payload.level===level)&&r.payload.school.toLocaleLowerCase('tr-TR').includes(term));
+$('submittedRows').innerHTML=submitted.map(r=>'<tr><td>'+esc(r.payload.school)+'</td><td>'+esc(r.period)+'</td><td>'+esc(new Date(r.updated_at).toLocaleString('tr-TR'))+'</td><td><button type="button" data-sent-report="'+esc(r.id)+'">Görüntüle</button><button type="button" class="danger" data-sent-delete="'+esc(r.id)+'">Sil</button></td></tr>').join('')||'<tr><td colspan="4">Seçilen filtrelerde gönderilmiş form bulunamadı.</td></tr>';
+document.querySelectorAll('[data-sent-report]').forEach(b=>b.onclick=()=>{const r=submissions.find(x=>x.id===b.dataset.sentReport);if(!r)return;reportPayload=r.payload;buildSchoolReport();$('schoolReportContent').scrollIntoView({behavior:'smooth'});});
+document.querySelectorAll('[data-sent-delete]').forEach(b=>b.onclick=async()=>{
+if(!admin){message('Bu işlem yalnızca RAM yöneticilerine açıktır.');return;}
+const r=submissions.find(x=>x.id===b.dataset.sentDelete);if(!r)return;
+const school=schools.find(x=>x.id===r.school_id);if(!school)return;
+const approval=window.prompt('UYARI: '+school.name+' okulunun '+r.period+' dönemine ait formu kalıcı olarak silinecek. Bu işlem geri alınamaz. Onaylamak için kurum kodunu yazınız: '+school.code);
+if(approval===null)return;
+if(approval.trim()!==school.code){message('Kurum kodu uyuşmuyor. Form silinmedi.');return;}
+if(!window.confirm(school.name+' formunu kalıcı olarak silmek istediğinizden emin misiniz?'))return;
+b.disabled=true;
+try{
+const deleted=await api('/rest/v1/ram_submissions?id=eq.'+encodeURIComponent(r.id)+'&version=eq.'+encodeURIComponent(r.version),{method:'DELETE'});
+if(!Array.isArray(deleted)||deleted.length!==1)throw Error('Kayıt silinemedi veya başka bir kullanıcı tarafından güncellendi. Listeyi yenileyiniz.');
+submissions=submissions.filter(x=>x.id!==r.id);
+reportPayload=null;$('schoolReportContent').hidden=true;$('schoolReportContent').innerHTML='';
+await renderAdmin();
+message(school.name+' okulunun '+r.period+' dönemi formu silindi.');
+}catch(e){message('Silme işlemi başarısız: '+e.message);}finally{b.disabled=false;}
+});
 const requests=await api('/rest/v1/ram_access_requests?select=*&order=created_at');$('requests').innerHTML=requests.map(r=>'<p>'+esc(r.email)+' · '+esc(schools.find(s=>s.id===r.school_id)?.name||'')+' <button data-user="'+r.user_id+'" data-school="'+r.school_id+'">Okul erişimini onayla</button></p>').join('')||'Bekleyen erişim isteği yok.';document.querySelectorAll('[data-user]').forEach(b=>b.onclick=async()=>{if(!confirm('Bu e-posta adresinin seçilen okulun yetkili öğretmenine ait olduğunu doğruladınız mı?'))return;try{await api('/rest/v1/rpc/ram_approve_request',{method:'POST',body:{target_user:b.dataset.user,target_school:b.dataset.school}});await refresh();message('Okul erişimi onaylandı.');}catch(e){message(e.message);}});}
 ['adminPeriod','adminLevel','adminSearch'].forEach(id=>$(id).oninput=()=>renderAdmin().catch(e=>message(e.message)));
 $('districtReport').onclick=()=>{const records=selectedRecords();if(!records.length){message('Bu dönemde yüklenmiş form yok.');return;}reportPayload={district:'Beylikdüzü',school:'İlçe toplamı · '+records.length+' okul formu',level:$('adminLevel').value||'Tüm kademeler',period:$('adminPeriod').value.trim(),counts:Object.fromEntries(labels.map((_,i)=>[i+1,records.reduce((n,r)=>n+r.counts[i+1],0)]))};buildSchoolReport();$('schoolReportContent').scrollIntoView({behavior:'smooth'});};
