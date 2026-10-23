@@ -99,7 +99,7 @@ const requests=await api('/rest/v1/ram_access_requests?select=*&order=created_at
 function makeSchoolPassword(){
 const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
 const random=crypto.getRandomValues(new Uint8Array(28));
-return Array.from(random,n=>alphabet[n%alphabet.length]).join('');
+return 'R'+Array.from(random,n=>alphabet[n%alphabet.length]).join('');
 }
 function updateCredentialsUi(){
 const id=$('credentialsSchool').value,exists=schoolAccounts.some(x=>x.school_id===id);
