@@ -12,6 +12,19 @@ Okulların **e-posta ile kaydolmasına gerek yoktur**. RAM yöneticisi panelde *
 - Şifre kaybolursa RAM yöneticisi **Şifreyi yenile** seçeneğiyle yeni şifre üretir. Şifreleri mesajlaşma gruplarında herkese açık yayınlamayın.
 - Yönetici hesabının e-posta/şifresi korunur. Eski onaylanmış öğretmen hesapları **RAM yöneticisi veya önceden e-posta hesabı olanlar** bölümünden geçiş süresince giriş yapabilir.
 
+
+## Toplu okul şifresi oluşturma ve dağıtım
+
+RAM yönetici panelinde **Tüm okullar için toplu şifre oluştur** bölümüne gidin ve **Şifresi olmayan tüm okullara şifre oluştur** düğmesini seçin. İşlem yalnızca aktif, daha önce şifresi tanımlanmamış okulları hedefler. Var olan şifreleri veya form kayıtlarını değiştirmez.
+
+İşlem sırasında tek tek yetki denetimli sunucu isteği yapılır. İlerleme, başarı ve hata sayıları görüntülenir. Yönetici istediğinde işlemi durdurabilir veya o ana dek başarılı olan şifreleri CSV olarak indirebilir. Üç ardışık başarısızlıktan sonra işlem durur.
+
+**CSV yalnızca başarıyla oluşturulan hesapların şifrelerini içerir.** Okul adı, kurum kodu, kademe, kurum türü, inceleme işareti, okul kimliği, giriş şifresi ve giriş adresi sütunları bulunur. Önceden oluşturulmuş hesapların şifreleri bu listede olmaz; kaybolan şifreler yönetici panelindeki **Okul şifresini yenile** aracılığıyla değiştirilir.
+
+CSV hassas kimlik bilgileri içerir. Tüm dosyayı hiçbir okula veya ortak gruba göndermeyin. Her okulun satırını yalnızca kurumun doğrulanmış yetkilisine bireysel yolla iletin. Dosyayı erişim kontrollü bir yerde saklayın. Tarayıcı sekmesini kapatmadan CSV dosyasını indirin ve açılıp açılmadığını kontrol edin. Şifreler ne GitHub deposuna ne de açık metin halinde Supabase veri tablolarına kaydedilir.
+
+**Dikkat:** Şifrelerin topluca üretimi yalnızca yönetici işlemi başlattığında gerçekleşir; kodun yayınlanması 253 okulun şifresinin kendiliğinden oluşturulduğu anlamına gelmez. Tüm okullarda gerçek tarayıcı testi henüz yapılmadığından önce bir okul hesabı açıp giriş sınamasını tamamlayın. Bazı okul kodlarında çakışma ve inceleme işaretli kayıtlar bulunduğundan CSV listesini dağıtmadan önce inceleyin.
+
 ## Kullanım
 
 1. RAM yöneticisi siteye eski hesabıyla girer ve **Okul giriş şifreleri** bölümünü açar.
