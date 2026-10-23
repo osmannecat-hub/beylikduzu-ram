@@ -2,20 +2,64 @@ const PUBLIC_KEY='sb_publishable_qd7956g-qF9_RVj6xIoX8w_3UQg02R8';
 const labels=["Anne en fazla ilkokul mezunu", "Baba en fazla ilkokul mezunu", "Tek çocuk olan", "5 ve üstü kardeşi olan", "Anne ve babası ayrı yaşayan ", "Anne ve babası boşanmış olan", "Yalnızca annesi ile yaşayan", "Yalnızca babası ile yaşayan", "Annesi hayatta olmayan", "Babası hayatta olmayan", "Anne ve babası hayatta olmayan ", " Şehit Çocuğu", "Yalnızca büyükanne/büyükbabasıyla yaşayan", "Yalnızca diğer akrabalarıyla yaşayan", "Koruyucu aile gözetiminde olan", "Sevgi Evlerinde kalan", "Sosyal Hizmetler Çocuk Esirgeme Kurumunda kalan", "Ailesinde süreğen hastalığı olan", "Ailesinde ruhsal hastalığı olan", "Ailesinde Bağımlı Bireyler Bulunan (alkol/madde)", "Ailesinde cezai hükmü bulunan", "Ailesi mevsimlik işçi olan", "Aile içi şiddete maruz kalan", "Özel Yetenekli tanısı olan", "Yetersizlik alanında özel eğitim raporu olan", "Süreğen hastalığı olan", "Ruhsal hastalığı olan", "Danışmanlık  Tedbir Kararı Olan ", " Eğitim Tedbir Kararı Olan ", "Maddi Sıkıntı Yaşayan", "Sürekli Devamsız olan", "Bir işte çalışan", "Akademik Başarısı Düşük ", "Riskli akran grubuna dahil olan", "Okulda bulunan yabancı uyruklu öğrenci sayısı", "Diğer"];
 const $=id=>document.getElementById(id),message=s=>$('msg').textContent=s;
 const API='https://uftqsvxieizpclpxbejs.supabase.co';
-let session=null,user=null,admin=false,schools=[],submissions=[],members=[],current=null,version=null,reportPayload=null;
+let session=null,user=null,admin=false,schools=[],submissions=[],members=[],current=null,version=null,reportPayload=null,schoolAccounts=[];
 try{session=JSON.parse(sessionStorage.getItem('ram-session')||'null');}catch{}
 const hash=new URLSearchParams(location.hash.slice(1));if(hash.has('access_token')){session={access_token:hash.get('access_token'),refresh_token:hash.get('refresh_token')};history.replaceState(null,'',location.pathname);sessionStorage.setItem('ram-session',JSON.stringify(session));}
 async function api(path,{method='GET',body,auth=true,retry=true}={}){const headers={apikey:PUBLIC_KEY,'Content-Type':'application/json'};if(auth&&session)headers.Authorization='Bearer '+session.access_token;if(path.startsWith('/rest/'))headers.Prefer='return=representation';const res=await fetch(API+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body)});const data=await res.json().catch(()=>null);if(res.status===401&&auth&&session?.refresh_token&&retry){const refreshed=await api('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:session.refresh_token},auth:false,retry:false});session=refreshed;sessionStorage.setItem('ram-session',JSON.stringify(session));return api(path,{method,body,auth,retry:false});}if(!res.ok)throw Error(data?.msg||data?.message||data?.error_description||data?.error||'İşlem başarısız ('+res.status+')');return data;}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 const opts=items=>items.map(s=>'<option value="'+s.id+'">'+esc(s.name)+' · '+esc(s.level)+' · '+esc(s.sector)+'</option>').join('');
 const rows=arr=>arr.map(s=>({...s,payload:{district:'Beylikdüzü',school:schools.find(x=>x.id===s.school_id)?.name||'Okul',level:schools.find(x=>x.id===s.school_id)?.level||'',period:s.period,grade:'OKUL',section:'GENEL',student_count:0,counts:s.counts}}));
-async function refresh(){schools=await api('/rest/v1/ram_schools?select=*&order=name');if(!user)return;admin=(await api('/rest/v1/ram_admins?select=user_id')).length>0;members=await api('/rest/v1/ram_memberships?select=*');submissions=rows(await api('/rest/v1/ram_submissions?select=*&order=updated_at.desc'));
-$('loginPanel').hidden=true;$('identityPanel').hidden=false;$('identity').textContent=user.email+' · '+(admin?'RAM yöneticisi':'Okul rehber öğretmeni');$('adminPanel').hidden=!admin;$('schoolPanel').hidden=admin;$('requestPanel').hidden=admin;
-const own=schools.filter(s=>members.some(m=>m.school_id===s.id));$('assignedSchool').innerHTML='<option value="">Okul seçiniz</option>'+opts(own);$('requestSchool').innerHTML='<option value="">Yetki istenecek okul</option>'+opts(schools.filter(s=>s.active));
-if(admin)await renderAdmin();else message(own.length?'Yetkili olduğunuz okulu seçiniz.':'Okulunuzu seçip erişim isteği gönderiniz. RAM onayladıktan sonra formu doldurabilirsiniz.');}
-async function init(){try{if(session){user=await api('/auth/v1/user');await refresh();}else message('E-posta adresiniz ve şifrenizle giriş yapınız.');}catch(e){session=null;sessionStorage.removeItem('ram-session');message('Giriş yeniden gerekli: '+e.message);}}
+async function refresh(){
+schools=await api('/rest/v1/ram_schools?select=*&order=name');
+if(!user)return;
+admin=(await api('/rest/v1/ram_admins?select=user_id')).length>0;
+members=await api('/rest/v1/ram_memberships?select=*');
+submissions=rows(await api('/rest/v1/ram_submissions?select=*&order=updated_at.desc'));
+$('loginPanel').hidden=true;
+$('identityPanel').hidden=false;
+const own=schools.filter(s=>members.some(m=>m.school_id===s.id));
+$('identity').textContent=admin?(user.email+' · RAM yöneticisi'):(own.map(x=>x.name).join(', ')||user.email)+' · Okul yetkilisi';
+$('adminPanel').hidden=!admin;
+$('schoolPanel').hidden=admin;
+$('requestPanel').hidden=admin||own.length>0;
+$('assignedSchool').innerHTML='<option value="">Okul seçiniz</option>'+opts(own);
+$('requestSchool').innerHTML='<option value="">Yetki istenecek okul</option>'+opts(schools.filter(s=>s.active));
+if(admin){
+  schoolAccounts=await api('/rest/v1/ram_school_logins?select=school_id,rotated_at');
+  const sel=$('credentialsSchool'),previous=sel.value;
+  sel.innerHTML='<option value="">Şifre tanımlanacak okul</option>'+opts(schools.filter(s=>s.active));
+  if(previous&&schools.some(s=>s.id===previous))sel.value=previous;
+  updateCredentialsUi();
+  await renderAdmin();
+} else message(own.length?'Yetkili olduğunuz okulu seçiniz.':'Okulunuzu seçip erişim isteği gönderiniz. RAM onayladıktan sonra formu doldurabilirsiniz.');
+}
+async function init(){
+try{
+  schools=await api('/rest/v1/ram_schools?select=*&active=eq.true&order=name',{auth:false});
+  $('loginSchool').innerHTML='<option value="">Okulunuzu seçiniz</option>'+opts(schools);
+  if(session){user=await api('/auth/v1/user');await refresh();}
+  else message('Okulunuzu ve RAM tarafından verilen şifreyi giriniz. Yöneticiyseniz alt bölümden giriş yapınız.');
+}catch(e){
+  if(session){session=null;sessionStorage.removeItem('ram-session');}
+  message('Bağlantı veya giriş sorunu: '+e.message);
+}}
 $('login').onclick=async()=>{try{message('Giriş yapılıyor…');session=await api('/auth/v1/token?grant_type=password',{method:'POST',body:{email:$('email').value.trim(),password:$('password').value},auth:false});sessionStorage.setItem('ram-session',JSON.stringify(session));$('password').value='';user=await api('/auth/v1/user');await refresh();}catch(e){message('Giriş yapılamadı: '+e.message);}};
-$('signup').onclick=async()=>{try{const password=$('password').value;if(password.length<12)throw Error('En az 12 karakterli bir şifre belirleyiniz.');await api('/auth/v1/signup?redirect_to='+encodeURIComponent(location.origin+location.pathname),{method:'POST',auth:false,body:{email:$('email').value.trim(),password}});$('password').value='';message('Hesap isteği alındı. E-postanıza gelen doğrulama bağlantısını açınız; ardından giriş yapınız. E-posta gelmiyorsa RAM ile iletişime geçiniz.');}catch(e){message('Hesap oluşturulamadı: '+e.message);}};
+$('schoolSignIn').onclick=async()=>{
+const selected=$('loginSchool').value,password=$('schoolPassword').value;
+if(!selected){message('Önce okulunuzu seçiniz.');return;}
+if(!password){message('RAM tarafından verilen okul şifresini giriniz.');return;}
+const b=$('schoolSignIn');b.disabled=true;
+try{
+ message('Okul girişi doğrulanıyor…');
+ const internalEmail='school-'+selected.replace(/-/g,'')+'@example.org';
+ session=await api('/auth/v1/token?grant_type=password',{method:'POST',body:{email:internalEmail,password},auth:false});
+ sessionStorage.setItem('ram-session',JSON.stringify(session));
+ $('schoolPassword').value='';
+ user=await api('/auth/v1/user');
+ await refresh();
+}catch(e){message('Giriş yapılamadı. Okulunuzu ve RAM tarafından verilen şifreyi kontrol ediniz.');}
+finally{b.disabled=false;}
+};
 $('logout').onclick=async()=>{try{await api('/auth/v1/logout',{method:'POST'});}catch{}sessionStorage.removeItem('ram-session');location.reload();};
 $('refresh').onclick=()=>refresh().catch(e=>message(e.message));
 $('requestAccess').onclick=async()=>{const id=$('requestSchool').value;if(!id){message('Önce okul seçiniz.');return;}try{await api('/rest/v1/ram_access_requests',{method:'POST',body:{user_id:user.id,school_id:id,email:user.email}});message("Okul erişim isteğiniz RAM'a ulaştı. Onaylandıktan sonra “Yenile” düğmesine basınız.");}catch(e){message('İstek alınamadı (aynı istek önceden gönderilmiş olabilir): '+e.message);}};
@@ -50,6 +94,53 @@ message(school.name+' okulunun '+r.period+' dönemi formu silindi.');
 }catch(e){message('Silme işlemi başarısız: '+e.message);}finally{b.disabled=false;}
 });
 const requests=await api('/rest/v1/ram_access_requests?select=*&order=created_at');$('requests').innerHTML=requests.map(r=>'<p>'+esc(r.email)+' · '+esc(schools.find(s=>s.id===r.school_id)?.name||'')+' <button data-user="'+r.user_id+'" data-school="'+r.school_id+'">Okul erişimini onayla</button></p>').join('')||'Bekleyen erişim isteği yok.';document.querySelectorAll('[data-user]').forEach(b=>b.onclick=async()=>{if(!confirm('Bu e-posta adresinin seçilen okulun yetkili öğretmenine ait olduğunu doğruladınız mı?'))return;try{await api('/rest/v1/rpc/ram_approve_request',{method:'POST',body:{target_user:b.dataset.user,target_school:b.dataset.school}});await refresh();message('Okul erişimi onaylandı.');}catch(e){message(e.message);}});}
+
+function makeSchoolPassword(){
+const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+const random=crypto.getRandomValues(new Uint8Array(28));
+return Array.from(random,n=>alphabet[n%alphabet.length]).join('');
+}
+function updateCredentialsUi(){
+const id=$('credentialsSchool').value,exists=schoolAccounts.some(x=>x.school_id===id);
+const school=schools.find(x=>x.id===id);
+$('credentialsStatus').textContent=!school?'Okulu seçiniz.':(exists?'Bu okulun giriş şifresi tanımlı. Gerekirse yeni şifre üretebilirsiniz.':'Bu okula henüz giriş şifresi verilmemiş.');
+$('issueSchoolPassword').disabled=!school||exists;
+$('rotateSchoolPassword').disabled=!school||!exists;
+}
+$('credentialsSchool').onchange=()=>{
+$('credentialsReveal').hidden=true;
+$('issuedSchoolPassword').textContent='';
+updateCredentialsUi();
+};
+async function handleCredentials(action){
+if(!admin){message('RAM yönetici yetkisi gerekli.');return;}
+const id=$('credentialsSchool').value,school=schools.find(x=>x.id===id);
+if(!school){message('Okul seçiniz.');return;}
+const isRotate=action==='rotate',verb=isRotate?'yenilenmesini':'oluşturulmasını';
+if(!window.confirm(school.name+' okulunun giriş şifresinin '+verb+' onaylıyor musunuz?'))return;
+const password=makeSchoolPassword();
+const btn=$(isRotate?'rotateSchoolPassword':'issueSchoolPassword');
+btn.disabled=true;
+$('credentialsReveal').hidden=true;
+$('issuedSchoolPassword').textContent='';
+try{
+ await api('/functions/v1/ram-school-credentials',{method:'POST',body:{action,school_id:id,password}});
+ $('issuedSchoolPassword').textContent=password;
+ $('credentialsReveal').hidden=false;
+ schoolAccounts=await api('/rest/v1/ram_school_logins?select=school_id,rotated_at');
+ updateCredentialsUi();
+ message(school.name+' okuluna ait şifre '+(isRotate?'yenilendi.':'oluşturuldu.')+' Lütfen şifreyi güvenli yoldan okula iletiniz.');
+}catch(e){message('Şifre işlemi başarısız: '+e.message);}
+finally{updateCredentialsUi();}
+}
+$('issueSchoolPassword').onclick=()=>handleCredentials('provision');
+$('rotateSchoolPassword').onclick=()=>handleCredentials('rotate');
+$('copySchoolPassword').onclick=async()=>{
+const pwd=$('issuedSchoolPassword').textContent;
+if(!pwd)return;
+try{await navigator.clipboard.writeText(pwd);message('Okul şifresi panoya kopyalandı.');}
+catch{message('Panoya kopyalama engellendi. Şifreyi ekrandan seçip kopyalayınız.');}
+};
 ['adminPeriod','adminLevel','adminSearch'].forEach(id=>$(id).oninput=()=>renderAdmin().catch(e=>message(e.message)));
 $('districtReport').onclick=()=>{const records=selectedRecords();if(!records.length){message('Bu dönemde yüklenmiş form yok.');return;}reportPayload={district:'Beylikdüzü',school:'İlçe toplamı · '+records.length+' okul formu',level:$('adminLevel').value||'Tüm kademeler',period:$('adminPeriod').value.trim(),counts:Object.fromEntries(labels.map((_,i)=>[i+1,records.reduce((n,r)=>n+r.counts[i+1],0)]))};buildSchoolReport();$('schoolReportContent').scrollIntoView({behavior:'smooth'});};
 $('showSchoolReport').onclick=()=>{if(buildSchoolReport())$('schoolReportContent').scrollIntoView({behavior:'smooth'});};$('printSchoolReport').onclick=()=>{if(buildSchoolReport())window.print();};
