@@ -207,8 +207,10 @@ $('bulkCreatePasswords').onclick=async()=>{
   const existing=new Set(fresh.map(r=>r.school_id));
   const pending=schools.filter(s=>s.active&&!existing.has(s.id));
   if(!pending.length){message('Şifresi olmayan aktif okul kalmadı. Mevcut şifreleri görmek mümkün değildir; gerekirse tekil şifre yenileyebilirsiniz.');return;}
-  const warning=pending.length+' aktif okul için YENİ giriş hesabı ve ayrı şifre oluşturulacak. '+existing.size+' mevcut okul hesabının şifresi korunacak.\n\nİşlem uzun sürebilir. Sekmeyi kapatmayın. Şifre listesini CSV olarak indirmeden bu sayfadan ayrılmayın. Devam edilsin mi?';
+  const flagged=pending.filter(s=>s.needs_review).length;
+  const warning=pending.length+' aktif okul için YENİ giriş hesabı ve ayrı şifre oluşturulacak. '+existing.size+' mevcut okul hesabının şifresi korunacak.'+(flagged?'\n\nDİKKAT: '+flagged+' okul kaydının envanterde incelenmesi gerekiyor. Şifre paylaşmadan önce bu okulların kimliğini doğrulayın.':'')+'\n\nİşlem uzun sürebilir. Sekmeyi kapatmayın. Şifre listesini CSV olarak indirmeden bu sayfadan ayrılmayın. Devam edilsin mi?';
   if(!window.confirm(warning))return;
+  if(flagged&&!window.confirm(flagged+' inceleme işaretli okula da hesap oluşturulacak. Kurum adlarını ve kodlarını şifre paylaşımından önce tek tek kontrol etmeyi kabul ediyor musunuz?'))return;
   bulkIssued=[];bulkFailures=[];bulkDownloadedCount=0;bulkStop=false;bulkRunning=true;
   const progress=$('bulkPasswordProgress');
   progress.max=pending.length;
