@@ -3,6 +3,7 @@ const labels=["Anne en fazla ilkokul mezunu", "Baba en fazla ilkokul mezunu", "T
 const $=id=>document.getElementById(id),message=s=>$('msg').textContent=s;
 const API='https://uftqsvxieizpclpxbejs.supabase.co';
 let session=null,user=null,admin=false,schools=[],submissions=[],members=[],current=null,version=null,reportPayload=null,schoolAccounts=[];
+let bulkRunning=false,bulkStop=false,bulkIssued=[],bulkFailures=[],bulkDownloadedCount=0;
 try{session=JSON.parse(sessionStorage.getItem('ram-session')||'null');}catch{}
 const hash=new URLSearchParams(location.hash.slice(1));if(hash.has('access_token')){session={access_token:hash.get('access_token'),refresh_token:hash.get('refresh_token')};history.replaceState(null,'',location.pathname);sessionStorage.setItem('ram-session',JSON.stringify(session));}
 async function api(path,{method='GET',body,auth=true,retry=true}={}){const headers={apikey:PUBLIC_KEY,'Content-Type':'application/json'};if(auth&&session)headers.Authorization='Bearer '+session.access_token;if(path.startsWith('/rest/'))headers.Prefer='return=representation';const res=await fetch(API+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body)});const data=await res.json().catch(()=>null);if(res.status===401&&auth&&session?.refresh_token&&retry){const refreshed=await api('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:session.refresh_token},auth:false,retry:false});session=refreshed;sessionStorage.setItem('ram-session',JSON.stringify(session));return api(path,{method,body,auth,retry:false});}if(!res.ok)throw Error(data?.msg||data?.message||data?.error_description||data?.error||'İşlem başarısız ('+res.status+')');return data;}
@@ -104,8 +105,8 @@ function updateCredentialsUi(){
 const id=$('credentialsSchool').value,exists=schoolAccounts.some(x=>x.school_id===id);
 const school=schools.find(x=>x.id===id);
 $('credentialsStatus').textContent=!school?'Okulu seçiniz.':(exists?'Bu okulun giriş şifresi tanımlı. Gerekirse yeni şifre üretebilirsiniz.':'Bu okula henüz giriş şifresi verilmemiş.');
-$('issueSchoolPassword').disabled=!school||exists;
-$('rotateSchoolPassword').disabled=!school||!exists;
+$('issueSchoolPassword').disabled=!school||exists||bulkRunning;
+$('rotateSchoolPassword').disabled=!school||!exists||bulkRunning;
 }
 $('credentialsSchool').onchange=()=>{
 $('credentialsReveal').hidden=true;
@@ -141,6 +142,144 @@ if(!pwd)return;
 try{await navigator.clipboard.writeText(pwd);message('Okul şifresi panoya kopyalandı.');}
 catch{message('Panoya kopyalama engellendi. Şifreyi ekrandan seçip kopyalayınız.');}
 };
+
+function bulkUi(){
+  const ready=admin&&!bulkRunning&&bulkIssued.length<=bulkDownloadedCount;
+  $('bulkCreatePasswords').disabled=!ready;
+  $('bulkDownloadPasswords').disabled=bulkIssued.length===0;
+  $('bulkStopPasswords').hidden=!bulkRunning;
+  $('bulkPasswordFailures').hidden=bulkFailures.length===0;
+  $('bulkPasswordFailureList').textContent=bulkFailures.map(x=>x.school.name+' ('+(x.school.code||'kod yok')+'): '+x.error).join('\n');
+}
+window.addEventListener('beforeunload',e=>{
+  if(bulkRunning||bulkIssued.length>bulkDownloadedCount){
+    e.preventDefault();
+    e.returnValue='';
+  }
+});
+function csvCell(value){
+  let v=String(value??'').replace(/[\x00-\x1f\x7f]/g,' ').trim();
+  // Mitigate spreadsheet formula injection in school names and other external labels.
+  if(/^[=+\-@]/.test(v))v="'"+v;
+  return '"'+v.replace(/"/g,'""')+'"';
+}
+function downloadSchoolCredentials(){
+  if(!admin||!bulkIssued.length)return;
+  const rows=[
+    ['Kurum Adı','Kurum Kodu','Kademe','Tür','Kontrol Gerekiyor','Okul Kimliği','Giriş Şifresi','Giriş Adresi'],
+    ...bulkIssued.map(({school,password})=>[
+      school.name,school.code||'',school.level,school.sector,
+      school.needs_review?'Evet':'Hayır',school.id,password,
+      'https://osmannecat-hub.github.io/beylikduzu-ram/'
+    ])
+  ];
+  const csv='\uFEFF'+rows.map(row=>row.map(csvCell).join(';')).join('\r\n');
+  const file=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(file);
+  try{
+    const a=document.createElement('a');
+    a.href=url;
+    a.download='Beylikduzu_RAM_Okul_Giris_Sifreleri_'+new Date().toISOString().slice(0,10)+'.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    bulkDownloadedCount=bulkIssued.length;
+    message(bulkIssued.length+' okulun yeni şifresini içeren CSV indirme işlemi başlatıldı. Dosyayı kontrol edip yalnızca ilgili okul yetkilisiyle tekil olarak paylaşınız.');
+  }finally{
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
+    bulkUi();
+  }
+}
+$('bulkDownloadPasswords').onclick=downloadSchoolCredentials;
+$('bulkStopPasswords').onclick=()=>{bulkStop=true;message('İşlemi durdurma isteği alındı. Devam etmeden önce oluşturulan şifreleri CSV olarak kaydediniz.');};
+$('bulkCreatePasswords').onclick=async()=>{
+  if(!admin||bulkRunning)return;
+  if(bulkIssued.length>bulkDownloadedCount){
+    message('Yeni işleme geçmeden önce mevcut şifre listesini CSV olarak indiriniz.');
+    return;
+  }
+  let fresh;
+  try{
+    fresh=await api('/rest/v1/ram_school_logins?select=school_id');
+    if(!Array.isArray(fresh))throw Error('Hesap listesi alınamadı.');
+  }catch(e){message('Mevcut okul hesapları kontrol edilemedi: '+e.message);return;}
+  schoolAccounts=fresh;
+  const existing=new Set(fresh.map(r=>r.school_id));
+  const pending=schools.filter(s=>s.active&&!existing.has(s.id));
+  if(!pending.length){message('Şifresi olmayan aktif okul kalmadı. Mevcut şifreleri görmek mümkün değildir; gerekirse tekil şifre yenileyebilirsiniz.');return;}
+  const warning=pending.length+' aktif okul için YENİ giriş hesabı ve ayrı şifre oluşturulacak. '+existing.size+' mevcut okul hesabının şifresi korunacak.\n\nİşlem uzun sürebilir. Sekmeyi kapatmayın. Şifre listesini CSV olarak indirmeden bu sayfadan ayrılmayın. Devam edilsin mi?';
+  if(!window.confirm(warning))return;
+  bulkIssued=[];bulkFailures=[];bulkDownloadedCount=0;bulkStop=false;bulkRunning=true;
+  const progress=$('bulkPasswordProgress');
+  progress.max=pending.length;
+  progress.value=0;
+  $('bulkPasswordStatus').textContent='Hazırlanıyor… 0 / '+pending.length;
+  bulkUi();
+  updateCredentialsUi();
+  let failuresInRow=0,attempted=0,alreadyThere=0;
+  for(const school of pending){
+    if(bulkStop)break;
+    const password=makeSchoolPassword();
+    try{
+      const result=await api('/functions/v1/ram-school-credentials',{
+        method:'POST',body:{action:'provision',school_id:school.id,password}
+      });
+      if(!result?.success||result.action!=='provisioned')throw Error('Sunucu hesap oluşturmayı doğrulamadı.');
+      bulkIssued.push({school,password});
+      schoolAccounts.push({school_id:school.id});
+      failuresInRow=0;
+    }catch(e){
+      let recovered=false;
+      // A lost response can occur after successful provisioning. Verify the
+      // proposed password, but NEVER assume an already-existing account uses it.
+      try{
+        const lookup=await api('/rest/v1/ram_school_logins?select=school_id&school_id=eq.'+encodeURIComponent(school.id));
+        if(Array.isArray(lookup)&&lookup.length){
+          const internalEmail='school-'+school.id.replace(/-/g,'')+'@example.org';
+          const signedIn=await api('/auth/v1/token?grant_type=password',{
+            method:'POST',auth:false,retry:false,
+            body:{email:internalEmail,password}
+          });
+          if(signedIn?.access_token){
+            bulkIssued.push({school,password});
+            schoolAccounts.push({school_id:school.id});
+            recovered=true;
+          }else{
+            alreadyThere++;
+          }
+        }
+      }catch{}
+      if(recovered)failuresInRow=0;
+      else{
+        bulkFailures.push({school,error:e?.message||'Hesap oluşturulamadı'});
+        failuresInRow++;
+      }
+    }
+    attempted++;
+    progress.value=attempted;
+    $('bulkPasswordStatus').textContent='İşlenen: '+attempted+'/'+pending.length+' · Oluşturulan: '+bulkIssued.length+' · Hata: '+bulkFailures.length+' · Mevcut hesaplar: '+existing.size+'. İstediğiniz anda kısmi CSV indirebilirsiniz.';
+    bulkUi();
+    if(failuresInRow>=3){
+      bulkStop=true;
+      message('Arka arkaya üç hata oluştu. Gereksiz kayıt denemelerini önlemek için işlem durduruluyor. Hataları kontrol edin ve eldeki şifreleri CSV olarak indirin.');
+    }
+  }
+  bulkRunning=false;
+  try{schoolAccounts=await api('/rest/v1/ram_school_logins?select=school_id,rotated_at');}
+  catch(e){message('Okul şifreleri üretildi ancak güncel hesap listesi getirilemedi: '+e.message);}
+  updateCredentialsUi();
+  bulkUi();
+  $('bulkPasswordStatus').textContent=(bulkStop?'İşlem durduruldu. ':'Toplu işlem tamamlandı. ')+
+    'Yeni hesap: '+bulkIssued.length+' · Hata: '+bulkFailures.length+
+    ' · Toplam hedef: '+pending.length+
+    (alreadyThere?' · Başka işlemde oluşturulmuş hesap: '+alreadyThere:'')+
+    '. Şifreleri CSV olarak indirmeyi unutmayınız.';
+  if(bulkIssued.length){
+    message('Yeni okul hesapları oluşturuldu. Şimdi “Şifre listesini CSV indir” düğmesine basıp listeyi güvenle saklayınız.');
+    $('bulkDownloadPasswords').focus();
+  }else message('Şifre oluşturulamadı. Hata ayrıntılarını kontrol ediniz.');
+};
+
 ['adminPeriod','adminLevel','adminSearch'].forEach(id=>$(id).oninput=()=>renderAdmin().catch(e=>message(e.message)));
 $('districtReport').onclick=()=>{const records=selectedRecords();if(!records.length){message('Bu dönemde yüklenmiş form yok.');return;}reportPayload={district:'Beylikdüzü',school:'İlçe toplamı · '+records.length+' okul formu',level:$('adminLevel').value||'Tüm kademeler',period:$('adminPeriod').value.trim(),counts:Object.fromEntries(labels.map((_,i)=>[i+1,records.reduce((n,r)=>n+r.counts[i+1],0)]))};buildSchoolReport();$('schoolReportContent').scrollIntoView({behavior:'smooth'});};
 $('showSchoolReport').onclick=()=>{if(buildSchoolReport())$('schoolReportContent').scrollIntoView({behavior:'smooth'});};$('printSchoolReport').onclick=()=>{if(buildSchoolReport())window.print();};
