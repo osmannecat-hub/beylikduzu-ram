@@ -25,6 +25,16 @@ CSV hassas kimlik bilgileri içerir. Tüm dosyayı hiçbir okula veya ortak grub
 
 **Dikkat:** Şifrelerin topluca üretimi yalnızca yönetici işlemi başlattığında gerçekleşir; kodun yayınlanması 253 okulun şifresinin kendiliğinden oluşturulduğu anlamına gelmez. Tüm okullarda gerçek tarayıcı testi henüz yapılmadığından önce bir okul hesabı açıp giriş sınamasını tamamlayın. Bazı okul kodlarında çakışma ve inceleme işaretli kayıtlar bulunduğundan CSV listesini dağıtmadan önce inceleyin.
 
+## Eksik şifre listesini tamamlama (186 → 253)
+
+Supabase veritabanındaki 253 aktif okulun tamamı için hesap açılmışsa, yeni hesap oluşturma butonu hiçbir şifre üretmez. Şifreler Auth tarafında tek yönlü olarak saklandığı için yeniden okunamaz.
+
+1. RAM yöneticisi daha önce indirdiği **186 şifreli CSV dosyasını** `Eksik şifre listesini tamamla` bölümünden seçer. Dosya tarayıcıda işlenir; sunucuya yüklenmez.
+2. Uygulama eşleştirmeyi **okul UUID'sine** göre yapar; aynı kurum kodunu taşıyan farklı okullar karışmaz.
+3. Yönetici `CSV'de eksik olan okulların şifrelerini yenile ve listeyi tamamla` seçeneğini onaylar. Yalnızca CSV'de olmayan hesaplarda yeni şifre atanır. CSV'deki 186 şifre değiştirilmez.
+4. Tamamlandığında `Şifre listesini CSV indir` ile **eski 186 ve yeni 67 şifreyi birleştiren** liste alınır. Hata olursa yalnızca başarıyla yenilenenler birleştirilir; eksikler ayrıca gösterilir. Kullanıcı liste tamamlanana kadar yeniden başlatabilir.
+5. Şifre listesi hassastır; dağıtım öncesinde eksik kayıtlar, inceleme işaretli kurumlar ve okul kimlikleri kontrol edilir. Eski CSV’deki şifrelerin hâlen çalıştığı dosyadan doğrulanamaz; yalnızca bu işlem onların şifrelerini değiştirmez.
+
 ## Kullanım
 
 1. RAM yöneticisi siteye eski hesabıyla girer ve **Okul giriş şifreleri** bölümünü açar.
