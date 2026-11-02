@@ -109,7 +109,7 @@ const id=$('credentialsSchool').value,exists=schoolAccounts.some(x=>x.school_id=
 const school=schools.find(x=>x.id===id);
 $('credentialsStatus').textContent=!school?'Okulu seçiniz.':(exists?'Bu okulun giriş şifresi tanımlı. Gerekirse yeni şifre üretebilirsiniz.':'Bu okula henüz giriş şifresi verilmemiş.');
 $('issueSchoolPassword').disabled=!school||exists||bulkRunning||specialRunning;
-$('rotateSchoolPassword').disabled=!school||!exists||bulkRunning;
+$('rotateSchoolPassword').disabled=!school||!exists||bulkRunning||specialRunning;
 }
 $('credentialsSchool').onchange=()=>{
 $('credentialsReveal').hidden=true;
