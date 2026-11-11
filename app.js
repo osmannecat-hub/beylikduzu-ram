@@ -75,7 +75,61 @@ async function loadSchool(){current=null;version=null;$('schoolReportContent').h
 $('assignedSchool').onchange=()=>loadSchool().catch(e=>message(e.message));$('period').onchange=()=>loadSchool().catch(e=>message(e.message));
 $('save').onclick=async()=>{const p=checked();if(!p)return;const b=$('save');b.disabled=true;try{const body={school_id:$('assignedSchool').value,period:p.period,counts:p.counts,updated_by:user.id};const saved=current?await api('/rest/v1/ram_submissions?id=eq.'+current.id+'&version=eq.'+version,{method:'PATCH',body}):await api('/rest/v1/ram_submissions',{method:'POST',body});if(!saved.length)throw Error('Kayıt başka bir girişte değiştirildi. Okulu yeniden seçip güncel formu yükleyiniz.');current=saved[0];version=current.version;message("Kaydınız Beylikdüzü RAM'a ulaştı.");}catch(e){message('Gönderilemedi: '+e.message);}finally{b.disabled=false;}};
 function selectedRecords(){return submissions.filter(r=>r.period===$('adminPeriod').value.trim()&&(!$('adminLevel').value||r.payload.level===$('adminLevel').value));}
-async function renderAdmin(){const period=$('adminPeriod').value.trim(),term=$('adminSearch').value.toLocaleLowerCase('tr-TR'),level=$('adminLevel').value;const list=schools.filter(s=>(!level||s.level===level)&&s.name.toLocaleLowerCase('tr-TR').includes(term));$('adminRows').innerHTML=list.map(s=>{const r=submissions.find(r=>r.school_id===s.id&&r.period===period);return '<tr><td>'+esc(s.name)+'<br><small>'+esc(s.sector)+'</small></td><td>'+esc(s.level)+'</td><td>'+(r?'Geldi':'Bekleniyor')+'</td><td>'+(r?'<button data-report="'+r.id+'">Formu gör</button>':'—')+'</td></tr>';}).join('');document.querySelectorAll('[data-report]').forEach(b=>b.onclick=()=>{const r=submissions.find(x=>x.id===b.dataset.report);reportPayload=r.payload;buildSchoolReport();$('schoolReportContent').scrollIntoView({behavior:'smooth'});});$('adminSummary').textContent='Listede '+list.length+' okul · '+list.filter(s=>submissions.some(r=>r.school_id===s.id&&r.period===period)).length+' form geldi';
+
+function missingSchoolsForFilters(){
+  const period=$('adminPeriod').value.trim();
+  const level=$('adminLevel').value;
+  const term=$('adminSearch').value.trim().toLocaleLowerCase('tr-TR');
+  const sent=new Set(submissions.filter(r=>r.period===period).map(r=>r.school_id));
+  return schools.filter(s=>
+    s.active&&!sent.has(s.id)&&(!level||s.level===level)&&
+    s.name.toLocaleLowerCase('tr-TR').includes(term)
+  ).sort((a,b)=>a.name.localeCompare(b.name,'tr'));
+}
+function renderMissingSchools(){
+  const period=$('adminPeriod').value.trim();
+  const filtered=missingSchoolsForFilters();
+  const active=schools.filter(s=>s.active);
+  const submittedCount=active.filter(s=>submissions.some(r=>r.period===period&&r.school_id===s.id)).length;
+  const allMissing=active.length-submittedCount;
+  $('missingSchoolSummary').textContent=period+' döneminde '+active.length+
+    ' aktif okuldan '+submittedCount+' okul form gönderdi, '+allMissing+
+    ' okul henüz göndermedi. Seçili filtrelerde '+filtered.length+' okul listeleniyor.';
+  $('missingSchoolRows').innerHTML=filtered.map((s,i)=>
+    '<tr><td>'+(i+1)+'. '+esc(s.name)+'</td>'+
+    '<td>'+esc(s.code||'Doğrulanacak')+'</td>'+
+    '<td>'+esc(s.level)+'</td>'+
+    '<td>'+esc(s.sector)+'</td>'+
+    '<td>'+(schoolAccounts.some(x=>x.school_id===s.id)?'Tanımlı':'Tanımlı değil')+'</td></tr>'
+  ).join('')||'<tr><td colspan="5">Seçilen filtrelere göre form göndermeyen okul bulunmuyor.</td></tr>';
+  $('downloadMissingSchools').disabled=filtered.length===0;
+}
+$('downloadMissingSchools').onclick=()=>{
+  if(!admin){message('Bu liste yalnızca RAM yöneticilerine açıktır.');return;}
+  const period=$('adminPeriod').value.trim();
+  if(!/^\d{4}-\d{4}$/.test(period)){
+    message('CSV indirmek için geçerli bir eğitim yılı seçiniz (ör. 2026-2027).');return;
+  }
+  const selected=missingSchoolsForFilters();
+  if(!selected.length){message('İndirilecek form göndermeyen okul yok.');return;}
+  const columns=['Sıra','Okul Adı','Kurum Kodu','Kademe','Tür','Giriş Hesabı','Eğitim Yılı','Form Durumu'];
+  const data=[columns,...selected.map((s,i)=>[
+    i+1,s.name,s.code||'',s.level,s.sector,
+    schoolAccounts.some(x=>x.school_id===s.id)?'Tanımlı':'Tanımlı değil',
+    period,'Gönderilmedi'
+  ])];
+  const csv='\uFEFF'+data.map(row=>row.map(csvCell).join(';')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  try{
+    const a=document.createElement('a');a.href=url;
+    a.download='Beylikduzu_RAM_Form_Gondermeyen_Okullar_'+period+'_'+new Date().toISOString().slice(0,10)+'.csv';
+    document.body.appendChild(a);a.click();a.remove();
+    message(period+' eğitim yılı için '+selected.length+' form göndermeyen okulun CSV indirmesi başlatıldı.');
+  }finally{setTimeout(()=>URL.revokeObjectURL(url),10000);}
+};
+
+async function renderAdmin(){const period=$('adminPeriod').value.trim(),term=$('adminSearch').value.toLocaleLowerCase('tr-TR'),level=$('adminLevel').value;const list=schools.filter(s=>(!level||s.level===level)&&s.name.toLocaleLowerCase('tr-TR').includes(term));$('adminRows').innerHTML=list.map(s=>{const r=submissions.find(r=>r.school_id===s.id&&r.period===period);return '<tr><td>'+esc(s.name)+'<br><small>'+esc(s.sector)+'</small></td><td>'+esc(s.level)+'</td><td>'+(r?'Geldi':'Bekleniyor')+'</td><td>'+(r?'<button data-report="'+r.id+'">Formu gör</button>':'—')+'</td></tr>';}).join('');document.querySelectorAll('[data-report]').forEach(b=>b.onclick=()=>{const r=submissions.find(x=>x.id===b.dataset.report);reportPayload=r.payload;buildSchoolReport();$('schoolReportContent').scrollIntoView({behavior:'smooth'});});$('adminSummary').textContent='Listede '+list.length+' okul · '+list.filter(s=>submissions.some(r=>r.school_id===s.id&&r.period===period)).length+' form geldi';renderMissingSchools();
 const submitted=submissions.filter(r=>r.period===period&&(!level||r.payload.level===level)&&r.payload.school.toLocaleLowerCase('tr-TR').includes(term));
 $('submittedRows').innerHTML=submitted.map(r=>'<tr><td>'+esc(r.payload.school)+'</td><td>'+esc(r.period)+'</td><td>'+esc(new Date(r.updated_at).toLocaleString('tr-TR'))+'</td><td><button type="button" data-sent-report="'+esc(r.id)+'">Görüntüle</button><button type="button" class="danger" data-sent-delete="'+esc(r.id)+'">Sil</button></td></tr>').join('')||'<tr><td colspan="4">Seçilen filtrelerde gönderilmiş form bulunamadı.</td></tr>';
 document.querySelectorAll('[data-sent-report]').forEach(b=>b.onclick=()=>{const r=submissions.find(x=>x.id===b.dataset.sentReport);if(!r)return;reportPayload=r.payload;buildSchoolReport();$('schoolReportContent').scrollIntoView({behavior:'smooth'});});
