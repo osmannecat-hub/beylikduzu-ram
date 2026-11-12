@@ -70,7 +70,62 @@ function checked(){if(admin)return reportPayload;const p=payload();if(!validate(
 async function loadSchool(){current=null;version=null;$('schoolReportContent').hidden=true;const id=$('assignedSchool').value;if(!id)return;const found=await api('/rest/v1/ram_submissions?select=*&school_id=eq.'+id+'&period=eq.'+encodeURIComponent($('period').value.trim()));current=found[0]||null;version=current?.version??null;document.querySelectorAll('[data-indicator]').forEach(x=>x.value=current?.counts[x.dataset.indicator]??0);message(current?"RAM’da kayıtlı form yüklendi. Düzenleyip tekrar gönderebilirsiniz.":"Bu okul ve dönem için yeni form.");}
 $('assignedSchool').onchange=()=>loadSchool().catch(e=>message(e.message));$('period').onchange=()=>loadSchool().catch(e=>message(e.message));
 $('save').onclick=async()=>{const p=checked();if(!p)return;const b=$('save');b.disabled=true;try{const body={school_id:$('assignedSchool').value,period:p.period,counts:p.counts,updated_by:user.id};const saved=current?await api('/rest/v1/ram_submissions?id=eq.'+current.id+'&version=eq.'+version,{method:'PATCH',body}):await api('/rest/v1/ram_submissions',{method:'POST',body});if(!saved.length)throw Error('Kayıt başka bir girişte değiştirildi. Okulu yeniden seçip güncel formu yükleyiniz.');current=saved[0];version=current.version;message("Kaydınız Beylikdüzü RAM'a ulaştı.");}catch(e){message('Gönderilemedi: '+e.message);}finally{b.disabled=false;}};
-function selectedRecords(){return submissions.filter(r=>r.period===$('adminPeriod').value.trim()&&(!$('adminLevel').value||r.payload.level===$('adminLevel').value));}
+function selectedRecords(){
+ const period=$('adminPeriod').value.trim(),level=$('adminLevel').value;
+ const activeSchools=new Map(schools.filter(s=>s.active).map(s=>[s.id,s]));
+ return submissions.filter(r=>{
+   const school=activeSchools.get(r.school_id);
+   return school&&r.period===period&&(!level||school.level===level);
+ });
+}
+function districtIndicatorTotals(records){
+ return labels.map((label,i)=>({
+   label:label.trim(),index:i+1,
+   count:records.reduce((total,r)=>{
+     const value=Number(r.counts?.[String(i+1)]??0);
+     return total+(Number.isFinite(value)&&value>=0?value:0);
+   },0)
+ }));
+}
+function renderDistrictReport(records,period,level){
+ const schoolIds=new Set(records.map(r=>r.school_id));
+ const totalSchools=schools.filter(s=>s.active&&(!level||s.level===level)).length;
+ const indicators=districtIndicatorTotals(records);
+ const total=indicators.reduce((n,x)=>n+x.count,0);
+ const positive=indicators.filter(x=>x.count>0);
+ const highest=[...indicators].sort((a,b)=>b.count-a.count||a.index-b.index).slice(0,5);
+ const max=Math.max(1,...indicators.map(x=>x.count));
+ const format=n=>Number(n).toLocaleString('tr-TR');
+ const header='<h2>Beylikdüzü RAM · İlçe Risk Haritası Raporu</h2>'+
+   '<p><strong>Eğitim yılı:</strong> '+escapeReport(period)+
+   ' · <strong>Kademe:</strong> '+escapeReport(level||'Tüm kademeler')+
+   ' · <strong>Oluşturulma:</strong> '+escapeReport(new Date().toLocaleString('tr-TR'))+'</p>';
+ const summary='<div class="report-summary">'+
+   '<div class="report-stat">Form gönderen okul<strong>'+format(schoolIds.size)+'</strong></div>'+
+   '<div class="report-stat">Bu kapsamda aktif okul<strong>'+format(totalSchools)+'</strong></div>'+
+   '<div class="report-stat">Form göndermeyen okul<strong>'+format(Math.max(0,totalSchools-schoolIds.size))+'</strong></div>'+
+   '<div class="report-stat">Gösterge toplamı<strong>'+format(total)+'</strong></div>'+
+   '</div>';
+ const top='<h3>En yüksek bildirim bulunan 5 gösterge</h3><ol>'+
+   highest.map(x=>'<li>'+escapeReport(x.label)+' : <strong>'+format(x.count)+'</strong></li>').join('')+'</ol>';
+ const bars='<h3>36 göstergeye göre ilçe toplamları</h3>'+
+   indicators.map(x=>'<div class="report-row"><div class="report-row-head">'+
+    '<span>'+x.index+'. '+escapeReport(x.label)+'</span><strong>'+format(x.count)+'</strong></div>'+
+    '<div class="report-bar-track"><div class="report-bar-fill" style="width:'+
+    (100*x.count/max).toFixed(1)+'%"></div></div></div>').join('');
+ const table='<h3>Gösterge toplamları tablosu</h3><div class="scroll"><table>'+
+   '<thead><tr><th>No</th><th>Gösterge</th><th>İlçe toplamı</th></tr></thead><tbody>'+
+   indicators.map(x=>'<tr><td>'+x.index+'</td><td>'+escapeReport(x.label)+
+    '</td><td><strong>'+format(x.count)+'</strong></td></tr>').join('')+
+   '</tbody></table></div>';
+ const note='<p class="report-note"><strong>Açıklama:</strong> Hesaplamalar yalnızca bu eğitim yılında form göndermiş aktif okulların kayıtlarına dayanır. '+schoolIds.size+
+   ' okulun 36 göstergesi ayrı ayrı toplanmıştır. Gösterge toplamı, tekil öğrenci sayısı veya risk yaygınlığı olarak yorumlanmamalıdır. '+
+   'Okul adı arama filtresi ilçe toplamına uygulanmaz; kademe seçimi uygulanır.</p>';
+ $('schoolReportContent').innerHTML=header+summary+top+bars+table+note;
+ $('schoolReportContent').hidden=false;
+ reportPayload=null;
+ return {schools:schoolIds.size,positive:positive.length,total};
+}
 
 function missingSchoolsForFilters(){
   const period=$('adminPeriod').value.trim();
@@ -203,8 +258,37 @@ function csvCell(value){
   return '"'+v.replace(/"/g,'""')+'"';
 }
 ['adminPeriod','adminLevel','adminSearch'].forEach(id=>$(id).oninput=()=>renderAdmin().catch(e=>message(e.message)));
-$('districtReport').onclick=()=>{const records=selectedRecords();if(!records.length){message('Bu dönemde yüklenmiş form yok.');return;}reportPayload={district:'Beylikdüzü',school:'İlçe toplamı · '+records.length+' okul formu',level:$('adminLevel').value||'Tüm kademeler',period:$('adminPeriod').value.trim(),counts:Object.fromEntries(labels.map((_,i)=>[i+1,records.reduce((n,r)=>n+r.counts[i+1],0)]))};buildSchoolReport();$('schoolReportContent').scrollIntoView({behavior:'smooth'});};
-$('showSchoolReport').onclick=()=>{if(buildSchoolReport())$('schoolReportContent').scrollIntoView({behavior:'smooth'});};$('printSchoolReport').onclick=()=>{if(buildSchoolReport())window.print();};
+$('districtReport').onclick=async()=>{
+ const button=$('districtReport');button.disabled=true;
+ try{
+  if(!admin)throw Error('İlçe raporu yalnızca RAM yönetici hesabıyla oluşturulabilir.');
+  const period=$('adminPeriod').value.trim(),level=$('adminLevel').value;
+  if(!/^\d{4}-\d{4}$/.test(period)||Number(period.slice(5))!==Number(period.slice(0,4))+1){
+   throw Error('Geçerli bir eğitim yılı seçiniz (ör. 2026-2027).');
+  }
+  message('Güncel formlar okunuyor, ilçe toplamları hazırlanıyor…');
+  const response=await api('/rest/v1/ram_submissions?select=*&order=updated_at.desc');
+  if(!Array.isArray(response))throw Error('Gönderilen formlar alınamadı.');
+  submissions=rows(response);
+  const records=selectedRecords();
+  if(!records.length){
+   message(period+' eğitim yılı'+(level?' / '+level:'')+' için gönderilmiş okul formu bulunamadı.');
+   return;
+  }
+  const totals=renderDistrictReport(records,period,level);
+  $('schoolReport').scrollIntoView({behavior:'smooth',block:'start'});
+  message('İlçe raporu oluşturuldu: '+totals.schools+' okul, 36 gösterge. Aşağıdaki raporu yazdırabilir veya PDF kaydedebilirsiniz.');
+ }catch(e){message('İlçe raporu oluşturulamadı: '+(e?.message||'Bilinmeyen hata'));}
+ finally{button.disabled=false;}
+};
+$('showSchoolReport').onclick=()=>{if(buildSchoolReport())$('schoolReportContent').scrollIntoView({behavior:'smooth'});};
+$('printSchoolReport').onclick=()=>{
+ if($('schoolReportContent').hidden){
+  if(admin){message('Önce ilçe raporu oluşturunuz veya bir okul formunu görüntüleyiniz.');return;}
+  if(!buildSchoolReport())return;
+ }
+ window.print();
+};
 init();
 
 const reportRecommendations=[
