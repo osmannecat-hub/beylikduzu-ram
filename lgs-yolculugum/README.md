@@ -144,3 +144,44 @@ Diğer 11 öğrenci ve 5 veli modülü henüz eski kısa formatta kalmaktadır.
 - Gerçek öğrenci/veli hesaplarıyla canlı senkronizasyonun kurum içi pilotta ayrıca denenmesi gerekir.
 
 Geliştirilmiş modüller şu anda yönetim panelinden düzenlenebilen standart içerik türleri değildir; bu pilot için uygulama koduna eklenmiştir. Yönetim paneline aşamalı atölye oluşturucu sonraki bir geliştirme olarak eklenebilir.
+
+
+## Kapsamlı modüller, 8 aşamalı yapı (17 Kasım 2026)
+
+Tüm **12 öğrenci** ve **6 veli** modülü özgün içeriklerle kapsamlı etkileşimli müfredata dönüştürüldü. Kaygı alanındaki iki eski 6 aşamalı temel atölye yerinde bırakıldı; aynı karttaki **İleri düzey** seçeneğiyle ek 8 aşamalı çalışma açılır.
+
+**Her modülde yer alan sekiz aşama:**
+1. Kişisel öğrenme hedefini seçme (yanıt geçici, kaydedilmez).
+2. Dört ayrıntılı bilgi ve örnek kartını inceleme.
+3. İki yaygın yanlış inanç ile daha esnek düşünceyi karşılaştırma.
+4. İki açıklamalı mini bilgi sorusu (test puanı tutulmaz).
+5. Gerçek yaşam kararı / senaryo 1 ve üç seçime özgü geri bildirim.
+6. Gerçek yaşam kararı / senaryo 2 ve üç seçime özgü geri bildirim.
+7. Üç küçük adımlı beceri uygulaması / davranış provası.
+8. Günlük yaşam için durum ve baş etme adımı seçerek uygulama planı oluşturma.
+
+**Tamamlanınca:** Son 7 güne ait günlük uygulama işaretleme seçeneği. Üç gün uygulamak şart değildir; işaretleme gelişim puanı olarak yorumlanmaz.
+
+**Öğrenci içerikleri:** sınav kaygısı ileri düzey, planlama, dikkat, uyku/dinlenme, beden sağlığı, destek isteme, deneme analizi, sınav günü, erteleme, özgüven, dijital denge ve hedef sürekliliği.
+
+**Veli içerikleri:** kaygı desteği ileri düzey, destekleyici iletişim, çalışma düzeni desteği, ailede uyku/dijital denge, deneme sonuçlarını konuşma, sınav haftası desteği.
+
+### Kişisel veri ve ilerleme
+- Öğrenci: \`lgs_student_progress.state.deepModules.<module_id>\`.
+- Veli: \`lgs_parent_progress.state.deepModules.<module_id>\`.
+- Saklanan: tamamlanan aşama numaraları, genel hazır seçeneklerden oluşturulan planın iki seçeneğinin numarası ve uygulama yapılan günlerin tarihleri.
+- Kaydedilmeyen: başlangıçta seçilen güçlükler, tekil çoktan seçmeli yanıtlar, senaryodaki tercihler, kişisel duygu veya kaygı anlatıları.
+- Gösterge **etkinliğe katılım** içindir, kişinin ruh sağlığı veya beceri yeterliği hakkında bir test sonucu değildir.
+- Veliye sunulan çocuk özeti mevcut güvenlik sınırlarıyla yalnızca genel tamamlama sayılarını içerir.
+
+### Dosyalar
+- \`curriculum-data.js\`: 18 modüle özgü eğitim metinleri, sorular, senaryolar, beceri provası ve plan seçenekleri.
+- \`curriculum.js\`: ortak etkileşim, aşama geçişi, sonuç ekranı, uygulama işaretleme ve ilerleme kartı.
+- \`index.html\`: öğrenci modülleriyle bağlantı, yeni görsel düzen ve bağımlılıkların yüklenmesi.
+- \`student.js\` ve \`family.js\`: ilgili kişisel panoda ayrıntılı atölye ilerlemesi, veli verisinin yeniden yüklenmesi.
+- \`workshops.js\`: önceki iki temel kaygı atölyesi (korundu).
+
+### Teknik kontrol
+Modül veri şeması doğrulandı (12 öğrenci, 6 veli). 18 modülün tamamı simülasyonla başlangıç, 8 aşama, kişisel plan, tamamlama ve günlük işaretleme bakımından test edildi. Ana sitede öğrenci/veli atölye yönlendirmeleri test edildi. Gerçek kurum hesaplarıyla canlı ağ üzerinden pilot kayıt ve farklı cihazda tekrar giriş testleri hâlâ gereklidir.
+
+**Önemli:** Bu program eğitim amaçlı prototiptir; kurum genelinde resmî kullanımdan önce alan uzmanlarının içerik incelemesi, öğrenci-veli bilgilendirmesi, veri saklama/silme süreçleri ve erişilebilirlik kontrolü gerekir.
