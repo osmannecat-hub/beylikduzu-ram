@@ -99,7 +99,7 @@ if(a.startsWith("deleteQuestion:")){collectQuestions();editorQ.splice(Number(a.s
 }catch(err){let node=$("#saveMessage");if(node)node.innerHTML='<div class="note warn">'+esc(err.message)+'</div>';else{adminNotice=err.message;render()}}});
 document.addEventListener("change",e=>{if(e.target.dataset.checkTask!==undefined){data.tasks[Number(e.target.dataset.checkTask)].done=e.target.checked;save();render()}if(e.target.dataset.habit!==undefined){let d=TODAY();data.habits[d]=data.habits[d]||{};data.habits[d][e.target.dataset.habit]=e.target.checked;save()}if(e.target.id==="edKind"){editorQ=[];renderExtra()}});
 $("#fontBtn").addEventListener("click",()=>{data.font=((data.font||0)+1)%3;save();render()});
-if(location.hash==="#admin")page="admin";
+if(location.hash==="#admin")page="admin";else if(location.hash==="#student")page="student";
 if(session){verifyAdmin().then(ok=>{if(ok&&page==="admin")loadAdmin();else render()})}
 window.LGSStudent.init({getData:()=>data,setData:v=>{data=v;render()},refresh:render});
 render();fetchPublic();
