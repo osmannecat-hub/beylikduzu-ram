@@ -150,7 +150,7 @@ async function logout(){
  if(debounce)clearTimeout(debounce);
  if(connected&&dirty>committed){await sync()}
  try{const t=await getToken();if(t)await req("/auth/v1/logout","POST",undefined,t)}catch(_){}
- saveSession(null);connected=false;sessionUid="";dirty=0;committed=0;syncStatus="";
+ saveSession(null);connected=false;sessionUid="";dirty=0;committed=0;syncStatus="";window.LGSFamily?.clearStudentLinks?.();
  // Öğrenciye ait ilerlemeyi ortak cihazda göstermemek için misafir kaydına dön.
  ctx.setData(safeData(guestState()));ctx.refresh();
 }
