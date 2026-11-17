@@ -5,7 +5,7 @@ const SB="https://uftqsvxieizpclpxbejs.supabase.co";
 const KEY="sb_publishable_qd7956g-qF9_RVj6xIoX8w_3UQg02R8";
 const EDGE=SB+"/functions/v1/lgs-student-accounts";
 const SESSION_KEY="lgs_student_session_v1", GUEST_KEY="lgs_yolculugum_v4";
-const STAGES=6;
+const STAGES=12;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ctx=null,session=null,sessionUid="",connected=false,busy=false,mode="login",error="",notice="";
@@ -18,7 +18,7 @@ const guestState=()=>{
 const empty=()=>({completed:[],tasks:[],habits:{},font:0,quizResults:[],activityCompleted:[]});
 function safeData(v){
  const s=Object.assign(empty(),(v&&typeof v==="object"&&!Array.isArray(v))?v:{});
- s.completed=Array.isArray(s.completed)?s.completed.filter(x=>typeof x==="string").slice(0,6):[];
+ s.completed=Array.isArray(s.completed)?s.completed.filter(x=>typeof x==="string").slice(0,12):[];
  s.tasks=Array.isArray(s.tasks)?s.tasks.filter(x=>x&&typeof x.text==="string").slice(-100).map(x=>({text:x.text.slice(0,120),day:String(x.day||"Bugün").slice(0,30),done:!!x.done})):[];
  s.habits=s.habits&&typeof s.habits==="object"&&!Array.isArray(s.habits)?s.habits:{};
  const habitKeys=Object.keys(s.habits).sort().slice(-90);s.habits=Object.fromEntries(habitKeys.map(k=>[k,s.habits[k]]));
@@ -73,6 +73,7 @@ async function loadRemote(){
  const newState=safeData(rows[0]?.state||empty());
  lastSavedState=JSON.stringify(newState);
  ctx.setData(newState);
+ window.LGSFamily?.refreshLinks?.();
 }
 async function logIn(code,password){
  const normalized=codeValue(code);
@@ -127,9 +128,9 @@ function dashboard(data){
  const done=(data.completed||[]).length, tasks=(data.tasks||[]).filter(x=>x.done).length;
  const scores=(data.quizResults||[]).slice(-3).reverse();
  const act=(data.activityCompleted||[]).length;
- const remain=["kaygi","plan","odak","uyku","beden","destek"].find(x=>!(data.completed||[]).includes(x));
+ const remain=["kaygi","plan","odak","uyku","beden","destek","deneme","sinavgunu","erteleme","ozguven","dijital","hedef"].find(x=>!(data.completed||[]).includes(x));
  const ratio=Math.round(done/STAGES*100);
- return '<div class="row" style="justify-content:space-between;align-items:start"><div><div class="eyebrow">KİŞİSEL ÖĞRENCİ ALANIM</div><h1>Gelişimim 🌱</h1><p>Her küçük adımın birikiyor. Bu bilgiler yalnızca senin hesabına bağlı.</p></div><button class="btn small outline" data-action="studentLogout">Çıkış yap</button></div><div class="note good">🔒 <strong>Giriş yapıldı.</strong> Adın, okulun veya e-posta adresin kaydedilmiyor. <span id="studentSync">'+esc(syncStatus)+'</span></div><div class="statrow">'+stat(done+"/6","Bitirdiğim modül")+stat(tasks,"Tamamlanan hedef")+stat((data.quizResults||[]).length,"Mini test denemem")+'</div><div class="grid2"><div class="tile"><h3>Modül ilerlemem</h3><h2>'+ratio+'%</h2><div class="progress" style="margin:15px 0"><span style="width:'+ratio+'%"></span></div><p>'+done+' modülü bitirdin. '+(remain?'Bir sonraki modülü de keşfetmeye ne dersin?':'Altı modülü tamamladın, istediğin zaman tekrar edebilirsin.')+'</p><button class="btn primary" data-go="lessons">Modüllere git →</button></div><div class="tile"><h3>Son 7 günlük rutinim</h3><p>İşaretlediğin küçük alışkanlıkların görünümü. Yüksek puan yarışı değil, farkındalık alanı.</p><div style="display:flex;gap:7px;align-items:flex-end;margin-top:25px">'+graph(data)+'</div><button class="btn light small" data-go="wellness" style="margin-top:17px">Bugünkü adımları işaretle</button></div></div><div class="grid2" style="margin-top:17px"><div class="tile"><h3>Mini testlerim</h3>'+(scores.length?scores.map(x=>'<div class="listrow"><div><strong>'+esc(x.title)+'</strong><small>'+esc(String(x.date).slice(0,10))+'</small></div><strong>'+x.score+'/'+x.total+'</strong></div>').join(""):'<p>Henüz bir mini test tamamlamadın.</p>')+'<button class="btn light small" data-go="quiz" style="margin-top:13px">Bilgimi dene</button></div><div class="tile"><h3>Kendi çalışma adımlarım</h3><div class="listrow"><strong>Eklediğim hedefler</strong><strong>'+(data.tasks||[]).length+'</strong></div><div class="listrow"><strong>Tamamladığım etkinlikler</strong><strong>'+act+'</strong></div><button class="btn light small" data-go="planner" style="margin-top:13px">Planımı aç</button></div></div><div class="tile" style="margin-top:16px"><h3>Önceki cihazımdaki ilerlemem</h3><p>Bu cihazda hesap açmadan önce yaptığın etkinlikler varsa, istersen bunları hesabına aktarabilirsin. Ortak kullanılan okul bilgisayarlarında başka bir öğrencinin kayıtlarını aktarma.</p><div class="row"><button class="btn outline" data-action="studentImport">Bu cihazdaki eski ilerlememi aktar</button><button class="btn light" data-action="studentRetrySync">Kaydı yeniden dene</button></div></div>';
+ return '<div class="row" style="justify-content:space-between;align-items:start"><div><div class="eyebrow">KİŞİSEL ÖĞRENCİ ALANIM</div><h1>Gelişimim 🌱</h1><p>Her küçük adımın birikiyor. Bu bilgiler yalnızca senin hesabına bağlı.</p></div><button class="btn small outline" data-action="studentLogout">Çıkış yap</button></div><div class="note good">🔒 <strong>Giriş yapıldı.</strong> Adın, okulun veya e-posta adresin kaydedilmiyor. <span id="studentSync">'+esc(syncStatus)+'</span></div><div class="statrow">'+stat(done+"/6","Bitirdiğim modül")+stat(tasks,"Tamamlanan hedef")+stat((data.quizResults||[]).length,"Mini test denemem")+'</div><div class="grid2"><div class="tile"><h3>Modül ilerlemem</h3><h2>'+ratio+'%</h2><div class="progress" style="margin:15px 0"><span style="width:'+ratio+'%"></span></div><p>'+done+' modülü bitirdin. '+(remain?'Bir sonraki modülü de keşfetmeye ne dersin?':'Altı modülü tamamladın, istediğin zaman tekrar edebilirsin.')+'</p><button class="btn primary" data-go="lessons">Modüllere git →</button></div><div class="tile"><h3>Son 7 günlük rutinim</h3><p>İşaretlediğin küçük alışkanlıkların görünümü. Yüksek puan yarışı değil, farkındalık alanı.</p><div style="display:flex;gap:7px;align-items:flex-end;margin-top:25px">'+graph(data)+'</div><button class="btn light small" data-go="wellness" style="margin-top:17px">Bugünkü adımları işaretle</button></div></div><div class="grid2" style="margin-top:17px"><div class="tile"><h3>Mini testlerim</h3>'+(scores.length?scores.map(x=>'<div class="listrow"><div><strong>'+esc(x.title)+'</strong><small>'+esc(String(x.date).slice(0,10))+'</small></div><strong>'+x.score+'/'+x.total+'</strong></div>').join(""):'<p>Henüz bir mini test tamamlamadın.</p>')+'<button class="btn light small" data-go="quiz" style="margin-top:13px">Bilgimi dene</button></div><div class="tile"><h3>Kendi çalışma adımlarım</h3><div class="listrow"><strong>Eklediğim hedefler</strong><strong>'+(data.tasks||[]).length+'</strong></div><div class="listrow"><strong>Tamamladığım etkinlikler</strong><strong>'+act+'</strong></div><button class="btn light small" data-go="planner" style="margin-top:13px">Planımı aç</button></div></div>'+window.LGSFamily.renderStudentLinks()+'<div class="tile" style="margin-top:16px"><h3>Önceki cihazımdaki ilerlemem</h3><p>Bu cihazda hesap açmadan önce yaptığın etkinlikler varsa, istersen bunları hesabına aktarabilirsin. Ortak kullanılan okul bilgisayarlarında başka bir öğrencinin kayıtlarını aktarma.</p><div class="row"><button class="btn outline" data-action="studentImport">Bu cihazdaki eski ilerlememi aktar</button><button class="btn light" data-action="studentRetrySync">Kaydı yeniden dene</button></div></div>';
 }
 function stat(n,label){return '<div class="stat"><strong>'+esc(n)+'</strong><small>'+esc(label)+'</small></div>'}
 function form(){
@@ -209,7 +210,7 @@ document.addEventListener("click",async(event)=>{
  }catch(e){info(e.message||"İşlem tamamlanamadı.",false)}
 });
 window.addEventListener("online",()=>{if(connected&&dirty>committed)sync()});
-window.LGSStudent={init,saveData,isLoggedIn:()=>connected,render,banner:accountWidget,renderAdminCodes,recordQuiz:(score,total,title)=>{
+window.LGSStudent={init,saveData,isLoggedIn:()=>connected,getStudentToken:getToken,getStudentUid:()=>sessionUid,render,banner:accountWidget,renderAdminCodes,recordQuiz:(score,total,title)=>{
  const s=safeData(ctx.getData());s.quizResults.push({date:new Date().toISOString(),score,total,title});s.quizResults=s.quizResults.slice(-40);ctx.setData(s);saveData(s);
  }};
 })();
