@@ -15,7 +15,7 @@ const PARENT_MODULES=[
 {id:"sinav_haftasi",emoji:"☀️",title:"Sınav haftası aile rehberi",subtitle:"Güvenli ve sakin bir ortam oluşturmak",sections:[["Son günlerde denge","Çocuğu daha fazla çalışmaya zorlamak yerine dinlenme, uyku ve düzeni destekleyin."],["Pratik hazırlıklar","Gerekli belgeler, ulaşım ve sınav günü saatini önceden birlikte gözden geçirin."],["Koşulsuz destek","“Sonuç ne olursa olsun yanındayım.” mesajını gerçekçi ve tutarlı davranışlarla gösterin."]],practice:"Sınav öncesi çocuğunuzdan sizin hangi davranışınızın ona daha çok destek olacağını öğrenin."}
 ];
 let context=null,sess=null,uid="",logged=false,parentProgress={completed:[]},summary=null,view="home",selected="",mode="login",notice="",error="",working=false;
-let students=[],pending=[],invitationCode="",studentError="",parentSync="";
+let students=[],pending=[],invitationCode="",studentError="",parentSync="",linkedStudentUid="";
 try{sess=JSON.parse(sessionStorage.getItem(SESSION)||"null");uid=sess?.user?.id||""}catch(_){}
 function normCode(raw){const s=String(raw??"").toUpperCase().replace(/[^A-Z0-9]/g,"");if(!/^VELI[A-HJ-NP-Z2-9]{12}$/.test(s))return "";return "VELI-"+s.slice(4,8)+"-"+s.slice(8,12)+"-"+s.slice(12,16)}
 function pseudo(code){return "v"+code.replace(/[^A-Z0-9]/g,"").toLowerCase()+"@parents.lgs.example"}
@@ -106,14 +106,22 @@ async function logout(){
  try{await api("/auth/v1/logout","POST",undefined,await authToken())}catch(_){}
  saveSession(null);logged=false;summary=null;parentProgress={completed:[]};view="home";context?.render();
 }
+function clearStudentLinks(){students=[];pending=[];invitationCode="";studentError="";linkedStudentUid=""}
 async function refreshLinks(){
- if(!window.LGSStudent?.isLoggedIn())return;
- try{const x=await edge({op:"student-links"},await window.LGSStudent.getStudentToken());students=x.parents||[];pending=x.invites||[];studentError=""}
- catch(e){studentError=e.message}
+ if(!window.LGSStudent?.isLoggedIn()){clearStudentLinks();return}
+ const current=window.LGSStudent.getStudentUid();
+ if(linkedStudentUid!==current){clearStudentLinks();linkedStudentUid=current}
+ try{
+  const x=await edge({op:"student-links"},await window.LGSStudent.getStudentToken());
+  if(current!==window.LGSStudent.getStudentUid())return;
+  students=x.parents||[];pending=x.invites||[];studentError="";
+ }catch(e){if(current===window.LGSStudent.getStudentUid())studentError=e.message}
  context?.render();
 }
 function renderStudentLinks(){
  if(!window.LGSStudent?.isLoggedIn())return "";
+ const current=window.LGSStudent.getStudentUid();
+ if(current!==linkedStudentUid){clearStudentLinks();linkedStudentUid=current}
  const active=students.filter(x=>x.active);
  let html='<div class="tile" style="margin-top:16px"><div class="row" style="justify-content:space-between"><div><h3>👨‍👩‍👧 Veliyle ilerleme paylaşımı</h3><p>Paylaşım yalnızca senin onayınla açılır. Veli, puanlarını veya özel notlarını görmez.</p></div><span class="tag">Sen kontrol edersin</span></div><div class="row"><button class="btn primary small" data-action="familyInviteStudent">Veli davet kodu oluştur</button><button class="btn outline small" data-action="familyReloadLinks">Bağlantılarımı yenile</button></div>'+(invitationCode?'<div class="note good"><strong>Veliye vereceğin kod</strong><h2 style="font-family:monospace;letter-spacing:.05em">'+esc(invitationCode)+'</h2><small>Bu kod 7 gün geçerlidir ve yalnızca bir kez kullanılabilir.</small><div><button class="btn small outline" data-action="familyCopyInvite">Kodu kopyala</button></div></div>':'')+(studentError?'<div class="note warn">'+esc(studentError)+'</div>':'')+'<div style="margin-top:13px">';
  active.forEach((x,i)=>html+='<div class="listrow"><div><strong>Veli bağlantısı '+(i+1)+'</strong><small>Bağlantı: '+new Date(x.linked_at).toLocaleDateString("tr-TR")+'</small></div><button class="btn small outline" data-action="familyRevoke:'+esc(x.id)+'">Erişimi kaldır</button></div>');
@@ -152,5 +160,5 @@ document.addEventListener("click",async e=>{
   if(a.includes("Student")||a.includes("Invite")||a.includes("Links")||a.includes("Revoke")){studentError=msg;context?.render()}else{error=msg;notice="";context?.render()}
  }finally{working=false}
 });
-window.LGSFamily={init,render,renderStudentLinks,refreshLinks,isLoggedIn:()=>logged};
+window.LGSFamily={init,render,renderStudentLinks,refreshLinks,clearStudentLinks,isLoggedIn:()=>logged};
 })();
