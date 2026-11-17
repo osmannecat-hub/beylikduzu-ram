@@ -97,12 +97,18 @@ async function register(){
  await edge({op:"register",code:c,password:pw});
  await parentLogin(c,pw);
 }
+let parentSaveQueue=Promise.resolve();
 async function saveParent(){
  if(!logged)return;
+ const currentUid=uid,snapshot=JSON.parse(JSON.stringify(parentProgress));
  parentSync="Kaydediliyor…";
- const tok=await authToken();
- await api("/rest/v1/lgs_parent_progress?on_conflict=parent_id","POST",{parent_id:uid,state:parentProgress,updated_at:new Date().toISOString()},tok,{"Prefer":"resolution=merge-duplicates,return=minimal"});
- parentSync="Kaydedildi";
+ parentSaveQueue=parentSaveQueue.catch(()=>{}).then(async()=>{
+  if(!logged||uid!==currentUid)return;
+  const tok=await authToken();
+  await api("/rest/v1/lgs_parent_progress?on_conflict=parent_id","POST",{parent_id:currentUid,state:snapshot,updated_at:new Date().toISOString()},tok,{"Prefer":"resolution=merge-duplicates,return=minimal"});
+  parentSync="Kaydedildi";
+ });
+ return parentSaveQueue;
 }
 async function logout(){
  try{await api("/auth/v1/logout","POST",undefined,await authToken())}catch(_){}
