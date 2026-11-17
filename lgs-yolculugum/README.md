@@ -101,3 +101,46 @@ Kayıt için gerçek isim, okul, telefon veya e-posta istenmez. Kod ve şifre un
 - Her yeni sürüm, mevcut okul giriş portalını etkilemeyecek biçimde lgs-yolculugum/ altında tutulur.
 
 **Pilot testi:** Kurum geneline açılmadan önce bir test öğrenci ve test veli hesabıyla davet, kayıt, senkronizasyon, erişim kaldırma senaryoları uçtan uca denenmelidir. Bu senaryolar henüz canlı hesaplarla doğrulanmadı. Öğrenci verilerinin işlenmesine yönelik aydınlatma, saklama ve silme politikaları ayrıca netleştirilmelidir.
+
+## Geliştirilmiş psikoeğitim atölyeleri (17 Kasım 2026)
+
+**Pilot sürümde iki modül altı aşamalı etkileşimli atölyeye dönüştürülmüştür.**
+Diğer 11 öğrenci ve 5 veli modülü henüz eski kısa formatta kalmaktadır.
+
+### Öğrenci atölyesi: Kaygımla Başa Çıkıyorum
+1. Sınav heyecanının olası belirtilerini fark etme (öğrencinin verdiği seçimler saklanmaz).
+2. Düşünce, duygu, bedensel tepki ve davranış eğilimini ayırma (4 eşleştirme).
+3. Deneme öncesi, sınav sırasında ve deneme sonrası olmak üzere 3 karar durağı ve seçime özgü açıklamalar.
+4. Yardımcı iç konuşma seçme.
+5. Seçmeli 40 saniyelik yönlendirmeli nefes uygulaması veya 5-4-3-2-1 duyusal farkındalık.
+6. "Şu durumda / şu adımı deneyeceğim" planı ve daha sonra günlük uygulama işaretleme.
+
+### Veli atölyesi: Çocuğumun Sınav Kaygısına Destek
+1. Ebeveynin ilk tepkisini fark etme.
+2. Destekleyici ve zorlayıcı ifadeleri ayırma (4 eşleştirme).
+3. Sınav öncesi kaygı, düşük deneme sonucu ve matematikte zorlanma senaryoları.
+4. Duygu yansıtma, açık soru ve küçük adım içeren 3 aşamalı konuşma provası.
+5. Yetişkinin kendi tepkisini düzenlemesine yönelik nefes veya duyusal farkındalık.
+6. Aile iletişim planı ve günlük yaşamdaki uygulama işaretleme.
+
+### Kayıt ve gizlilik
+- Öğrenci atölye kaydı öğrenci hesabının var olan `lgs_student_progress.state.advancedModules.kaygi` alanında, veli kaydı `lgs_parent_progress.state.advancedModules.kaygi_destegi` alanında tutulur.
+- Saklanan bilgiler: tamamlanan aşama numaraları, seçilmiş genel plan seçeneklerinin numaraları ve günlük uygulamanın tarihleri.
+- Kaydedilmeyenler: kaygı belirtilerine ilişkin seçimler, soruların tekil yanıtları, iç konuşma metni, bireysel duygusal anlatılar ve çocuğa ilişkin özel notlar.
+- Bu gösterge, kaygı düzeyi, psikolojik iyi oluş ya da beceri yeterliği için psikometrik bir puan olarak yorumlanmaz.
+- Atölyeleri tamamlamak öğrenci/veli ana modül ilerlemesinde ilgili modülü tamamlandı olarak işaretler; önceki kısa modül tamamlamaları korunur.
+
+### Teknik
+- `workshops.js`: atölye içerikleri ve etkileşimleri.
+- `index.html`: atölye teması, öğrenci modülüne yönlendirme.
+- `family.js`: veli modülüne yönlendirme, veli kaydında alt aşamaların korunması, sıralı yazma işlemleri.
+- `student.js`: atölye gelişim kartı.
+- Yeni veritabanı tablosu veya kişisel bilgi alanı açılmadı.
+
+### Kontroller
+- JavaScript sözdizimi taraması tamamlandı.
+- Modülün altı aşamasını ve tamamlanmasını sınayan birim düzeyi etkileşim testi geçildi.
+- Ana sayfa -> öğrenci atölyesi -> veli ana sayfası -> veli atölyesi -> diğer öğrenci modülleri yönlendirmesi simüle edilerek test edildi.
+- Gerçek öğrenci/veli hesaplarıyla canlı senkronizasyonun kurum içi pilotta ayrıca denenmesi gerekir.
+
+Geliştirilmiş modüller şu anda yönetim panelinden düzenlenebilen standart içerik türleri değildir; bu pilot için uygulama koduna eklenmiştir. Yönetim paneline aşamalı atölye oluşturucu sonraki bir geliştirme olarak eklenebilir.
