@@ -24,7 +24,7 @@ function ui(kind,id,data){
  const k=key(kind,id);
  if(!temp.has(k)){
   const x=state(data,id);
-  temp.set(k,{step:x.steps.length>=8?8:x.steps.length,signals:[],read:new Set(),myth:{},quiz:{},scenario:{},practice:new Set(),planWhen:"",planDo:"",error:"",saving:false});
+  temp.set(k,{step:x.steps.length>=8?8:x.steps.length,signals:[],read:new Set(),myth:{},quiz:{},scenario:{},practice:new Set(),planWhen:[0,1,2].includes(x.plan.when)?String(x.plan.when):"",planDo:[0,1,2].includes(x.plan.action)?String(x.plan.action):"",error:"",saving:false});
  }
  return temp.get(k);
 }
@@ -42,7 +42,7 @@ function header(kind,m,s,u){
 function button(kind,id,act,label,disabled=false,variant="primary"){
  return '<button class="btn '+variant+'" '+(disabled?"disabled":"")+' data-deep="'+kind+':'+esc(id)+':'+act+'">'+esc(label)+'</button>';
 }
-function foot(){return '<div class="deep-footer">Bu atölye bilgilendirme ve beceri denemesi amaçlıdır. Kişisel yanıtların kaydedilmez. Psikolojik test veya tanı aracı değildir.</div>'}
+function foot(){return '<div class="deep-footer">Bu atölye eğitim amaçlıdır. Mini test ve senaryo cevapların kaydedilmez; yalnızca aşamalar, genel plan seçimi ve uygulama günleri saklanır. Psikolojik test değildir.</div>'}
 function intro(kind,m,u){
  let c='<div class="deep-prose"><h2>Bu modülde neler kazanacağım?</h2><p>'+esc(m.summary)+'</p><div class="deep-outcomes"><div><strong>Fark et</strong><p>'+esc(m.learn[0][0])+'</p></div><div><strong>Uygula</strong><p>'+esc(m.skill[0])+'</p></div><div><strong>Sürdür</strong><p>Günlük yaşamda kullanabileceğin küçük bir plan oluştur.</p></div></div><h3>Bugün hangisi üzerinde durmak istersin?</h3><p class="muted">Bir veya birkaç alan seç. Seçimin hesapta saklanmaz ve puanlanmaz.</p><div class="deep-options">';
  for(let i=0;i<3;i++)c+='<button class="deep-option '+(u.signals.includes(i)?"selected":"")+'" data-deep="'+kind+':'+m.id+':signal:'+i+'">'+(u.signals.includes(i)?"✓ ":"○ ")+esc(m.learn[i][0])+'</button>';
