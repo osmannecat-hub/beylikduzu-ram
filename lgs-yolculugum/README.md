@@ -72,3 +72,32 @@ Kayıt için gerçek isim, okul, telefon veya e-posta istenmez. Kod ve şifre un
 - Supabase Edge Function: \`lgs-student-accounts\`.
 
 **Not:** Üyelik bağlantı ve sunucu erişimi gerektirir. Hesapsız öğrenci içerikleri sınırlı çevrimdışı kullanım sunabilir; girişle senkronizasyon internet gerektirir.
+
+## Veli modülleri ve ebeveyn paneli (17 Kasım 2026)
+
+- Veli bölümü: https://osmannecat-hub.github.io/beylikduzu-ram/lgs-yolculugum/#parent
+- 12 öğrenci modülü: önceki 6 + deneme analizi, sınav günü, erteleme, özgüven, dijital denge ve hedef sürdürme.
+- 6 veli modülü: destekleyici iletişim, sınav kaygısı desteği, çalışma düzeni, dijital denge, deneme sonuçlarına yaklaşım, sınav haftası.
+- Veli kendi modüllerini okuyabilir ve tamamladıklarını kendi hesabına kaydedebilir.
+
+### Çocuk onayıyla eşleştirme
+1. Öğrenci 👤 Gelişimim bölümünde hesabına giriş yapar.
+2. “Veli davet kodu oluştur” düğmesiyle 7 gün geçerli tek kullanımlık VELI-XXXX-XXXX-XXXX kodu oluşturur.
+3. Veli 🏡 Velilere özel bölümünde, kod ve kendi belirlediği şifreyle kayıt olur; sonra aynı kodla giriş yapar.
+4. Öğrenci kullanılmamış kodu iptal edebilir veya bağlı veli hesabının erişimini istediği zaman kaldırabilir.
+
+### Veliye gösterilebilenler
+- Tamamlanan öğrenci modülü sayısı (12 üzerinden).
+- Eklenen ve tamamlanan çalışma hedefi sayıları.
+- Tamamlanan etkinlik sayısı.
+- Mini test deneme sayısı.
+
+**Veliye gösterilmeyenler:** Öğrencinin görev metinleri, sınav/mini test puanları, cevapları, günlük alışkanlık ayrıntıları ve kişisel notları. Çocuklar arasında sıralama yoktur.
+
+### Altyapı
+- Supabase: lgs_parent_invites, lgs_parent_links, lgs_parent_progress; öğrenci ilerlemesi lgs_student_progress tablosunda kalır.
+- Edge Function: lgs-family (kimlik/yetki denetimi, onaylı eşleştirme ve yalnızca sayı özetlerini sunma).
+- Ön yüz: family.js; kendi parent_id kaydı için RLS erişimi.
+- Her yeni sürüm, mevcut okul giriş portalını etkilemeyecek biçimde lgs-yolculugum/ altında tutulur.
+
+**Pilot testi:** Kurum geneline açılmadan önce bir test öğrenci ve test veli hesabıyla davet, kayıt, senkronizasyon, erişim kaldırma senaryoları uçtan uca denenmelidir. Bu senaryolar henüz canlı hesaplarla doğrulanmadı. Öğrenci verilerinin işlenmesine yönelik aydınlatma, saklama ve silme politikaları ayrıca netleştirilmelidir.
