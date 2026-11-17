@@ -43,11 +43,21 @@ async function edge(payload,token=""){
 }
 function goView(v,id){view=v;selected=id||"";context?.render();window.scrollTo({top:0,behavior:"smooth"})}
 function badges(){return '<div class="row"><span class="tag">8. sınıf aile rehberi</span><span class="tag">'+PARENT_MODULES.length+' veli modülü</span></div>'}
-function moduleCard(m){if(m.id==="kaygi_destegi"){const x=parentProgress.advancedModules?.kaygi_destegi,steps=Array.isArray(x?.steps)?x.steps.length:0;return '<div class="tile card" style="--tile:#e3f5ed"><div class="ico">🌿</div><span class="tag">✨ Etkileşimli atölye · 15–20 dk</span><h3>'+esc(m.title)+'</h3><p>Altı aşamalı ebeveyn iletişim çalışması ve günlük uygulama planı.</p><div class="progress"><span style="width:'+Math.round(steps/6*100)+'%"></span></div><button class="linklike" data-action="familyLesson:kaygi_destegi">Atölye '+steps+' / 6 aşama →</button></div>'}const done=logged&&parentProgress.completed.includes(m.id);return '<div class="tile card" style="--tile:#ecf4fa"><div class="ico">'+m.emoji+'</div><h3>'+esc(m.title)+'</h3><p>'+esc(m.subtitle)+'</p><button class="linklike" data-action="familyLesson:'+m.id+'">'+(done?"✓ Tamamlandı · Tekrar oku":"Modülü incele")+' →</button></div>'}
+function moduleCard(m){
+ if(m.id==="kaygi_destegi"){
+  const base=parentProgress.advancedModules?.kaygi_destegi,first=Array.isArray(base?.steps)?base.steps.length:0;
+  const advanced=window.LGSCurriculum.state(parentProgress,"kaygi_destegi").steps.length;
+  return '<div class="tile card deep-card" style="--tile:#e5f4ef"><div class="ico">🌿</div><span class="tag">Temel + ileri düzey program</span><h3>Sınav Kaygısında Ebeveyn Desteği</h3><p>Temel 6 aşama ve ileri düzey 8 uygulama aşaması.</p><small>Temel: '+first+'/6 · İleri: '+advanced+'/8</small><div class="progress"><span style="width:'+Math.round(advanced/8*100)+'%"></span></div><div class="row"><button class="btn small light" data-action="familyLesson:kaygi_destegi">Temel</button><button class="btn small outline" data-action="familyDeep:kaygi_destegi">İleri düzey</button></div></div>';
+ }
+ return window.LGSCurriculum.card("parent",m.id,parentProgress);
+}
+let familyDeepMode=false;
 function lesson(){
  const l=PARENT_MODULES.find(x=>x.id===selected);if(!l)return home();
- if(l.id==="kaygi_destegi")return '<button class="back" data-action="familyBack">← Veli modüllerine dön</button>'+window.LGSWorkshops.renderParent({progress:parentProgress,logged,saveParent,render:context.render});
- return '<button class="back" data-action="familyBack">← Veli modüllerine dön</button><div class="cover" style="--tile:#e9f3fa"><div class="bigicon">'+l.emoji+'</div><div><div class="eyebrow">VELİ GELİŞİM MODÜLÜ</div><h1>'+esc(l.title)+'</h1><p>'+esc(l.subtitle)+'</p></div></div><div class="grid2">'+l.sections.map(([a,b],i)=>'<div class="tile fact"><div class="eyebrow">'+String(i+1).padStart(2,"0")+'</div><h3>'+esc(a)+'</h3><p>'+esc(b)+'</p></div>').join("")+'</div><div class="scenario"><div class="eyebrow">BU HAFTANIN KÜÇÜK UYGULAMASI</div><h3>Denemek için bir adım</h3><p>'+esc(l.practice)+'</p></div><div class="tile" style="margin-top:15px">'+(logged?'<div class="row"><button class="btn '+(parentProgress.completed.includes(l.id)?"light":"primary")+'" data-action="familyComplete:'+l.id+'">'+(parentProgress.completed.includes(l.id)?"✓ Okundu olarak işaretlendi":"Bu modülü tamamladım")+'</button></div>':'<p>Modülleri ücretsiz okuyabilirsiniz. Tamamladığınız modülleri kaydetmek için veli hesabınızla giriş yapın.</p><button class="btn primary" data-action="familyView:login">Veli girişi →</button>')+'</div>';
+ const back='<button class="back" data-action="familyBack">← Veli modüllerine dön</button>';
+ if(l.id==="kaygi_destegi"&&!familyDeepMode)
+  return back+'<div class="tile" style="margin-bottom:16px"><div class="row" style="justify-content:space-between"><div><strong>🌿 Sınav kaygısında iki düzeyli aile rehberi</strong><p>Temel atölyenin ardından daha derin karar senaryolarını deneyebilirsiniz.</p></div><button class="btn light" data-action="familyDeep:kaygi_destegi">İleri düzeye geç →</button></div></div>'+window.LGSWorkshops.renderParent({progress:parentProgress,logged,saveParent,render:context.render});
+ return back+window.LGSCurriculum.render("parent",l.id,{progress:parentProgress,logged,saveParent,render:context.render});
 }
 function home(){
  return '<div class="hero"><div><div class="eyebrow">VELİLERE ÖZEL · BEYLİKDÜZÜ RAM</div><h1>Sınava birlikte,<br>güvenle. 🤝</h1><p>LGS yolculuğunda çocuğunuzun yanında olmak için destekleyici iletişim, günlük düzen ve sınav haftası rehberi.</p><button class="btn white" data-action="familyView:'+(logged?"dashboard":"login")+'">'+(logged?"Veli panelime git":"Veli hesabı / giriş")+' →</button></div><div class="heroart">🏡</div></div><div class="sectionhead"><div><h2>Ebeveyn rehberlik modülleri</h2><p>Her modülü ayrı ayrı inceleyebilir, küçük aile etkinlikleri uygulayabilirsiniz.</p></div></div><div class="grid">'+PARENT_MODULES.map(moduleCard).join("")+'</div><div class="note good" style="margin-top:17px">Ebeveyn panelinde yalnızca genel ilerleme sayıları gösterilir. Çocuğunuzun özel hedef metinleri, günlük alışkanlık ayrıntıları ve sınav puanları paylaşılmaz.</div>';
@@ -60,7 +70,7 @@ function counter(number,label){return '<div class="stat"><strong>'+esc(number)+'
 function dashboard(){
  const completed=parentProgress.completed.length;
  let top='<div class="row" style="justify-content:space-between;align-items:start"><div><div class="eyebrow">VELİ KİŞİSEL ALANIM</div><h1>Aile gelişim panelim 🌱</h1><p>Destekleyici aile rehberliği ve çocuğunuzun paylaşıma açtığı genel ilerleme özeti.</p></div><button class="btn small outline" data-action="familyLogout">Çıkış yap</button></div>';
- top+=window.LGSWorkshops.parentSummary(parentProgress);top+='<div class="tile"><div class="row" style="justify-content:space-between"><div><h3>Benim öğrenme ilerlemem</h3><p>Veli modülleri: '+completed+' / '+PARENT_MODULES.length+'</p></div><button class="btn small light" data-action="familyView:home">Modülleri aç →</button></div><div class="progress"><span style="width:'+Math.round(completed/PARENT_MODULES.length*100)+'%"></span></div></div>';
+ top+=window.LGSWorkshops.parentSummary(parentProgress)+window.LGSCurriculum.summary("parent",parentProgress);top+='<div class="tile"><div class="row" style="justify-content:space-between"><div><h3>Benim öğrenme ilerlemem</h3><p>Veli modülleri: '+completed+' / '+PARENT_MODULES.length+'</p></div><button class="btn small light" data-action="familyView:home">Modülleri aç →</button></div><div class="progress"><span style="width:'+Math.round(completed/PARENT_MODULES.length*100)+'%"></span></div></div>';
  if(summary===null)return top+'<div class="tile" style="margin-top:16px">Gelişim bilgileri yükleniyor…</div>';
  if(!summary.linked)return top+'<div class="note warn">Öğrenci bağlantısı şu anda aktif değil. Çocuğunuz bağlantıyı kaldırmış olabilir. Yeniden davet kodu oluşturması gerekir.</div>';
  const s=summary.summary||{};let pct=Math.round((Number(s.completed_modules)||0)/(Number(s.total_modules)||12)*100);
@@ -79,7 +89,7 @@ async function loadParent(){
  if(u?.app_metadata?.lgs_parent!==true)throw Error("Bu hesap veli hesabı değil.");
  const r=await api("/rest/v1/lgs_parent_progress?select=state&parent_id=eq."+encodeURIComponent(uid),"GET",undefined,token);
  const previous=Array.isArray(r)?r[0]?.state:null;
- parentProgress={completed:Array.isArray(previous?.completed)?previous.completed.filter(x=>typeof x==="string").slice(0,6):[],advancedModules:previous?.advancedModules&&typeof previous.advancedModules==="object"&&!Array.isArray(previous.advancedModules)?previous.advancedModules:{}};
+ parentProgress={completed:Array.isArray(previous?.completed)?previous.completed.filter(x=>typeof x==="string").slice(0,6):[],advancedModules:previous?.advancedModules&&typeof previous.advancedModules==="object"&&!Array.isArray(previous.advancedModules)?previous.advancedModules:{},deepModules:previous?.deepModules&&typeof previous.deepModules==="object"&&!Array.isArray(previous.deepModules)?previous.deepModules:{}};
  logged=true;view="dashboard";context?.render();
  await refreshOverview();
 }
@@ -145,7 +155,8 @@ document.addEventListener("click",async e=>{
  if(a==="familyBack")return goView("home");
  if(a.startsWith("familyView:")){error="";return goView(a.split(":")[1])}
  if(a.startsWith("familyMode:")){mode=a.split(":")[1];error="";notice="";return context?.render()}
- if(a.startsWith("familyLesson:")){const id=a.substring(13);if(id==="kaygi_destegi")window.LGSWorkshops.enter("parent");return goView("lesson",id)}
+ if(a.startsWith("familyLesson:")){const id=a.substring(13);familyDeepMode=false;if(id==="kaygi_destegi")window.LGSWorkshops.enter("parent");else window.LGSCurriculum.enter("parent",id);return goView("lesson",id)}
+ if(a.startsWith("familyDeep:")){const id=a.substring("familyDeep:".length);familyDeepMode=true;window.LGSCurriculum.enter("parent",id);return goView("lesson",id)}
  try{
  working=true;
  if(a==="familyLogin"){await parentLogin($("#familyCode")?.value,$("#familyPassword")?.value);return context?.render()}
