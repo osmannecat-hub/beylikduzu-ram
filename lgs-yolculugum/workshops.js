@@ -64,8 +64,8 @@ const toolTitles=["🔎 Kaygıyı fark et","🧠 Düşünceyi yeniden ele al","�
 const GUARD_STEPS=6;
 let ctx={student:null,parent:null};
 const ui={
-student:{step:0,loaded:false,signals:[],matched:{},scenario:{},thought:"",situation:"",action:"",calm:"",timer:null,left:0},
-parent:{step:0,loaded:false,signals:[],matched:{},scenario:{},listen:{},situation:"",action:"",calm:"",timer:null,left:0}
+student:{step:0,loaded:false,signals:[],matched:{},scenario:{},scenarioStep:0,thought:"",situation:"",action:"",calm:"",timer:null,left:0},
+parent:{step:0,loaded:false,signals:[],matched:{},scenario:{},scenarioStep:0,listen:{},listenStep:0,situation:"",action:"",calm:"",timer:null,left:0}
 };
 function state(kind){
  const o=kind==="student"?ctx.student?.state:ctx.parent?.progress;
@@ -107,7 +107,7 @@ function intro(kind){
  return '<div class="ws-copy"><h3>'+(student?"Sınav heyecanı geldiğinde ne oluyor?":"Çocuğunuz zorlandığında ilk tepkiniz ne oluyor?")+'</h3><p>'+(student?"Sınav öncesi heyecan, zihinde bazı düşünceler ve bedende farklı tepkiler oluşturabilir. Bunları fark etmek, ardından bir adım seçmek için iyi bir başlangıçtır.":"Çocuğunuzun kaygısını hemen ortadan kaldırmak zorunda değilsiniz. İlk adım, onun duygu ve ihtiyaçlarını anlamak ve konuşma için güvenli bir alan oluşturmaktır.")+'</p><div class="note good">Bu bir psikolojik test veya tanı aracı değildir. Seçtikleriniz kaydedilmez.</div>';
  const choices=student?["Kalbimin hızlı atması","Aklıma olumsuz düşünceler gelmesi","Sorulara başlamayı erteleme isteği","Bir yetişkinle konuşma ihtiyacı"]:["Hemen çözüm söyleme isteği","Kendi kaygımı fark etme","Sorular sorma isteği","Sessiz kalıp önce dinleme ihtiyacı"];
  let c='<div class="ws-choices">'+choices.map((t,i)=>'<button type="button" class="ws-choice '+(ui[kind].signals.includes(i)?"selected":"")+'" data-ws="'+kind+':signal:'+i+'"><span>'+(ui[kind].signals.includes(i)?"✓":"○")+'</span>'+e(t)+'</button>').join("")+'</div>';
- return intro(kind)+c+'<p class="ws-help">Bir veya birkaç seçeneği işaretleyin. Burada doğru-yanlış yok.</p>'+wsButton(kind+":complete:0","Fark ettim, devam et →",ui[kind].signals.length===0)+"</div>";
+ return intro+c+'<p class="ws-help">Bir veya birkaç seçeneği işaretleyin. Burada doğru-yanlış yok.</p>'+wsButton(kind+":complete:0","Fark ettim, devam et →",ui[kind].signals.length===0)+"</div>";
 }
 function wsButton(action,label,disabled=false,cls="primary"){return '<button type="button" class="btn '+cls+'" data-ws="'+action+'" '+(disabled?"disabled":"")+'>'+e(label)+'</button>'}
 function match(kind){
@@ -123,7 +123,7 @@ function match(kind){
 }
 function scenario(kind){
  const s=kind==="student"?situations:parentScenes,u=ui[kind];
- const i=Math.min(Object.keys(u.scenario).length,2),answer=u.scenario[i],x=s[i];
+ const i=Math.min(u.scenarioStep||0,2),answer=u.scenario[i],x=s[i];
  let html='<div class="ws-copy"><h3>Karar noktası '+(i+1)+' / 3</h3><p>Hikâyenin bu bölümünde hangi tepkinin olası sonuçlarını görmek istersin?</p><div class="ws-question"><strong>'+e(x.q)+'</strong><div class="ws-options vertical">'+x.a.map((v,j)=>'<button type="button" class="ws-option '+(answer===j?"selected":"")+'" data-ws="'+kind+':scenario:'+i+':'+j+'">'+e(v.t)+'</button>').join("")+'</div>';
  if(answer!==undefined)html+='<p class="ws-feedback">'+e(x.a[answer].f)+'</p>';
  html+='</div><div class="row">'+(answer!==undefined?(i===2?wsButton(kind+":complete:2","Senaryoyu tamamla →"):wsButton(kind+":scenarioNext","Sonraki durak →")):"")+'</div><p class="ws-help">Seçimlerin bir sınav puanına dönüştürülmez; farklı tepkilerin olası etkilerini keşfetmek içindir.</p></div>';
@@ -145,7 +145,7 @@ function thought(kind){
 }
 function parentListen(){
  const u=ui.parent,arr=promptsParent;
- const idx=Math.min(Object.keys(u.listen).length,2),ans=u.listen[idx],q=arr[idx];
+ const idx=Math.min(u.listenStep||0,2),ans=u.listen[idx],q=arr[idx];
  let html='<div class="ws-copy"><h3>Üç adımlı dinleme provası</h3><p>Sohbetinizi sırasıyla üç beceri üzerinden deneyin: <strong>duyguyu yansıtma, açık soru sorma ve birlikte küçük adım seçme.</strong></p><div class="ws-question"><div class="eyebrow">KONUŞMA '+(idx+1)+' / 3</div><strong>'+e(q.q)+'</strong><div class="ws-options vertical">'+q.a.map((x,i)=>'<button type="button" class="ws-option '+(ans===i?"selected":"")+'" data-ws="parent:listen:'+idx+':'+i+'">'+e(x.t)+'</button>').join("")+'</div>';
  if(ans!==undefined)html+='<p class="ws-feedback">'+e(q.a[ans].f)+'</p>';
  html+='</div>'+(ans!==undefined?(idx===2?wsButton("parent:complete:3","Dinleme provasını bitir →"):wsButton("parent:listenNext","Sonraki konuşma →")):"")+'</div>';
@@ -199,9 +199,9 @@ function handle(kind,action,vals){
  if(action==="signal"){let i=n(vals[0]);u.signals=u.signals.includes(i)?u.signals.filter(x=>x!==i):[...u.signals,i];renderFn();return}
  if(action==="match"){u.matched[n(vals[0])]=n(vals[1]);renderFn();return}
  if(action==="scenario"){u.scenario[n(vals[0])]=n(vals[1]);renderFn();return}
- if(action==="scenarioNext"){renderFn();return}
+ if(action==="scenarioNext"){if(u.scenario[u.scenarioStep]===undefined)return;u.scenarioStep=Math.min((u.scenarioStep||0)+1,2);renderFn();return}
  if(action==="listen"){u.listen[n(vals[0])]=n(vals[1]);renderFn();return}
- if(action==="listenNext"){renderFn();return}
+ if(action==="listenNext"){if(u.listen[u.listenStep]===undefined)return;u.listenStep=Math.min((u.listenStep||0)+1,2);renderFn();return}
  if(action==="thought"){u.thought=vals[0];renderFn();return}
  if(action==="when"){u.situation=vals[0];renderFn();return}
  if(action==="action"){u.action=vals[0];renderFn();return}
@@ -258,6 +258,6 @@ window.LGSWorkshops={
  renderStudent:options=>{ctx.student=options;return render("student")},
  renderParent:options=>{ctx.parent=options;return render("parent")},
  studentSummary,parentSummary,stopTimer,
- enter:kind=>{stopTimer(kind);ui[kind].loaded=false;ui[kind].signals=[];ui[kind].matched={};ui[kind].scenario={};ui[kind].listen={};ui[kind].calm="";ui[kind].thought="";ui[kind].situation="";ui[kind].action="";}
+ enter:kind=>{stopTimer(kind);ui[kind].loaded=false;ui[kind].signals=[];ui[kind].matched={};ui[kind].scenario={};ui[kind].scenarioStep=0;ui[kind].listen={};ui[kind].listenStep=0;ui[kind].calm="";ui[kind].thought="";ui[kind].situation="";ui[kind].action="";}
 };
 })();
