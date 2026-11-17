@@ -36,3 +36,39 @@ Uygulama bağlantısı yalnızca HTTPS adresiyle eklenir ve yeni sekmede açıl�
 - Dinamik başlık, açıklama ve metinler HTML olarak değil kaçışlanmış metin olarak görüntülenir.
 - Yeni yönetici yetkilendirmesi Supabase'de yapılmalıdır. Her giriş yapan kullanıcı yönetici değildir.
 - Eğitim içerikleri bilgilendirme amaçlıdır, bireysel psikolojik değerlendirme yerine geçmez.
+
+
+## Öğrenci hesabı ve ilerleme (Kasım 2026)
+
+**Kişisel öğrenci alanı:** https://osmannecat-hub.github.io/beylikduzu-ram/lgs-yolculugum/ (menü: **👤 Gelişimim**).
+
+### Yönetici: Tek kullanımlık kod üretme
+1. Sitenin **🔐 Yönetim** bölümüne RAM yöneticisi hesabınızla giriş yapın.
+2. **Öğrenci hesap kodları** bölümünden **10 kod üret** veya **30 kod üret** seçin.
+3. Kodları kopyalayın ya da daha sonra **Kullanılmamış kodları göster** ile tekrar görüntüleyin.
+4. Öğrencilere kodları bireysel olarak verin. Sınıf listesi veya ad-soyad ile ilişkilendirilmiş listeleri platforma yüklemeyin.
+
+### Öğrenci: Hesabı oluşturma ve kullanma
+1. **👤 Gelişimim** bölümüne gidin ve **İlk kez kayıt ol** seçin.
+2. Rehber öğretmenden alınan \`LGS-XXXX-XXXX-XXXX\` biçimindeki **tek kullanımlık kodu** girin.
+3. En az 10 karakterli, harf ve sayı içeren kendi şifrenizi belirleyin.
+4. Sonraki günlerde aynı kod ve şifreyle **Giriş yap** bölümünden devam edin.
+5. Modüller, tamamlanan görevler, mini test sonuçları ve günlük alışkanlıklar öğrenciye özel olarak kaydedilir.
+
+Kayıt için gerçek isim, okul, telefon veya e-posta istenmez. Kod ve şifre unutulursa yönetici panelindeki **Öğrenci şifresini sıfırla** aracı yeni geçici şifre verir. Öğrenci hesabı bilgileri gizli tutulmalıdır.
+
+### Veri koruma
+- \`lgs_student_invites\`: kayıt için tek kullanımlık kodlar; yalnızca yönetici okuyabilir, öğrenci okuyamaz.
+- \`lgs_student_progress\`: öğrenciye özel durum verisi; yalnızca kendi JWT kimliğiyle erişilir, **RLS etkin**.
+- \`lgs-student-accounts\` Edge Function: yönetici kod üretimi, tek kullanımlık kodla kayıt, yönetici şifre sıfırlama. Fonksiyonda admin JWT'si bağımsız doğrulanır.
+- Üyelik Supabase Auth üzerinden oluşturulur. İstemci yalnızca **publishable** anahtarını içerir, servis anahtarı sunucudadır.
+- Misafir olarak (girişsiz) yapılan ilerleme aynı cihazdaki tarayıcıda tutulur; giriş yapınca **Bu cihazdaki eski ilerlememi aktar** seçeneğiyle istenirse aktarılabilir.
+- Öğrenciler arası başarı sıralaması veya sınıf puan tablosu yoktur.
+- Kurum çapında kullanmadan önce öğrenci/veli aydınlatma metni, veri saklama ve silme politikası değerlendirilmelidir.
+
+### Kaynak dosyaları
+- \`index.html\`: öğrenci modülleri, çalışma planı, mini sınav, yönetim ve öğrenci alanları.
+- \`student.js\`: kodla giriş, ilerleme eşitleme, gelişim görünümü ve yönetici öğrenci kod işlemleri.
+- Supabase Edge Function: \`lgs-student-accounts\`.
+
+**Not:** Üyelik bağlantı ve sunucu erişimi gerektirir. Hesapsız öğrenci içerikleri sınırlı çevrimdışı kullanım sunabilir; girişle senkronizasyon internet gerektirir.
