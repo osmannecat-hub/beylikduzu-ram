@@ -189,3 +189,38 @@ Modül veri şeması doğrulandı (12 öğrenci, 6 veli). 18 modülün tamamı s
 ## Tek klasik yazı tipi (18 Kasım 2026)
 
 Yazı tipi seçim düğmesi ve değiştirme kodu kaldırıldı. Öğrenci, veli ve yönetici görünümleri, davet kodları ve form alanları Georgia, serif kullanır. Eski yerel font tercihi klasik değere dönüştürülür; diğer ilerleme alanları korunur. Hesaptan yüklenen tercihler de klasik değere normalize edilir.
+
+## Akademik gelişim takip merkezi (18 Kasım 2026)
+
+Adres: https://osmannecat-hub.github.io/beylikduzu-ram/lgs-yolculugum/#academic
+
+PDR Koçum benzeri akademik takip ihtiyaçlarına yönelik, Beylikdüzü RAM için özgün olarak geliştirilen yeni öğrenci bölümü.
+
+### Beş ekran
+
+1. **Genel Bakış:** Girilen denemelerin toplam neti, net gelişim grafiği, son denemenin altı derslik dağılımı, tekrar konuları ve haftalık görev özeti.
+2. **Denemeler:** Deneme adı ve tarihine göre doğru/yanlış girilir. Boş sayısı otomatik belirlenir. Türkçe, Matematik ve Fen Bilimleri 20'şer; İnkılap Tarihi, Din Kültürü ve İngilizce 10'ar soru. Sınır doğrulaması yapılır. Her alt testin neti `doğru - yanlış / 3` olarak gösterilir. En fazla 20 kayıt.
+3. **Konu Haritası:** Öğrenci örnek konu başlıklarından veya kendi yazdığı konudan ekler, durumunu `Tekrar / Çalışıyorum / Pekişti` olarak değiştirir. En fazla 60 konu.
+4. **Haftalık Program:** “Tekrar” konularından bir seferde en fazla beş adet, her biri 25 dakikalık çalışma önerisi oluşturulur. Öğrenci manuel görev de ekleyebilir, bitirdiklerini işaretleyebilir. En fazla 80 görev.
+5. **Yanlışlarım Defteri:** Ders, konu, hata nedeni (konu / okuma / zaman / dikkat / diğer), tarih ve tekrar durumu. En fazla 50 kayıt.
+
+### Erişim ve veri güvenliği
+
+- Öğrenci hesabıyla giriş yapanların verisi **yalnızca kendi** `lgs_student_progress.state.academic` alanında saklanır. Giriş yapılmayan kullanımda aynı cihazdaki `localStorage` üzerinde tutulur.
+- `lgs_student_progress` tablosunun RLS kuralları değişmedi; yalnızca JSON durum verisi için üst sınır **40 KB -> 100 KB** olarak güncellendi.
+- Başka öğrenci hesaplarının akademik verilerine erişim sağlanmaz. Veli paneli yeni akademik veri alanlarını, deneme puanlarını, konu etiketlerini veya yanlışları göstermez.
+- Gerçek isim, okul, fotoğraf veya dosya yükleme gerektirmez. Diğer öğrenci ve veli modülleri korunur.
+- Sınavın 2027 kuralları değişirse soru sayısı ve net hesaplaması güncellenmelidir. Hesaplanan netler resmî LGS puanı değildir.
+- Net hesabında 2026 MEB kılavuzu esas alınmıştır: https://www.meb.gov.tr/meb_iys_dosyalar/2026_04/03170012_LGS_Basvuru_ve_Uygulama_Kilavuzu_2026_.pdf
+
+### Teknik dosyalar ve kontroller
+
+- `academic.js`: kullanıcı arayüzleri, örnek konu listesi, puan/net doğrulaması, öneri plan üretimi ve veri sınırlama.
+- `academic.css`: mobil uyumlu yeni ekran tasarımı (mevcut Georgia fontu kullanır).
+- `student.js`: hesap verisi normalizasyonunda akademik kayıt ve öğrenci panelindeki akademik özet.
+- `index.html`: yeni menü, ana sayfa kartı, çalışma planı bağlantısı ve doğrudan #academic bağlantısı.
+- Test edilen akış: paneli açma, doğru/yanlış girme, denemeyi kaydetme, konu ekleme, 7 günlük otomatik plan oluşturma, yanlış defteri kaydı ve yerel kalıcılık.
+- Ek kontrol: GitHub Pages dağıtımı ve Supabase anonim erişim / satır yetkilendirme kuralları.
+- Gerçek öğrenci hesabıyla cihazlar arası eşitleme halen kurum içi pilotla doğrulanmalıdır.
+
+**Not:** 2026 kılavuzundaki net hesabı, o yıla ait resmî standart puan hesabının karşılığı değildir. Tam puan tahmini sunulmaz.
