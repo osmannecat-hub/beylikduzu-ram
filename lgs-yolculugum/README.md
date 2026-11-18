@@ -7,7 +7,7 @@
 - Yöneticiler: https://osmannecat-hub.github.io/beylikduzu-ram/lgs-yolculugum/#admin
 
 ## Öğrenci özellikleri
-Altı temel modül, karar verme etkinlikleri, mini yarışma, haftalık çalışma planı, 60 saniyelik nefes molası, odak zamanlayıcısı, günlük alışkanlık takibi ve 3 farklı yazı tipi.
+Altı temel modül, karar verme etkinlikleri, mini yarışma, haftalık çalışma planı, 60 saniyelik nefes molası, odak zamanlayıcısı, günlük alışkanlık takibi ve uygulama genelinde tek klasik yazı tipi (Georgia, serif).
 
 Öğrenci hesabı gerekmez. Görevler ve ilerleme yalnızca kullanılan tarayıcıda `localStorage` üzerinde saklanır. RAM tarafından eklenen yeni kütüphane etkinlikleri Supabase'den yüklenir. İnternet kesilirse temel modüller çalışmaya devam eder.
 
@@ -185,3 +185,7 @@ Tüm **12 öğrenci** ve **6 veli** modülü özgün içeriklerle kapsamlı etki
 Modül veri şeması doğrulandı (12 öğrenci, 6 veli). 18 modülün tamamı simülasyonla başlangıç, 8 aşama, kişisel plan, tamamlama ve günlük işaretleme bakımından test edildi. Ana sitede öğrenci/veli atölye yönlendirmeleri test edildi. Gerçek kurum hesaplarıyla canlı ağ üzerinden pilot kayıt ve farklı cihazda tekrar giriş testleri hâlâ gereklidir.
 
 **Önemli:** Bu program eğitim amaçlı prototiptir; kurum genelinde resmî kullanımdan önce alan uzmanlarının içerik incelemesi, öğrenci-veli bilgilendirmesi, veri saklama/silme süreçleri ve erişilebilirlik kontrolü gerekir.
+
+## Tek klasik yazı tipi (18 Kasım 2026)
+
+Yazı tipi seçim düğmesi ve değiştirme kodu kaldırıldı. Öğrenci, veli ve yönetici görünümleri, davet kodları ve form alanları Georgia, serif kullanır. Eski yerel font tercihi klasik değere dönüştürülür; diğer ilerleme alanları korunur. Hesaptan yüklenen tercihler de klasik değere normalize edilir.

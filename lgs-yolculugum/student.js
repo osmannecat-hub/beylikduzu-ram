@@ -15,7 +15,7 @@ try{session=JSON.parse(sessionStorage.getItem(SESSION_KEY)||"null");sessionUid=s
 const guestState=()=>{
   try{return JSON.parse(localStorage.getItem(GUEST_KEY)||"null")||{}}catch(_){return {}}
 };
-const empty=()=>({completed:[],tasks:[],habits:{},font:0,quizResults:[],activityCompleted:[]});
+const empty=()=>({completed:[],tasks:[],habits:{},font:2,quizResults:[],activityCompleted:[]});
 function safeData(v){
  const s=Object.assign(empty(),(v&&typeof v==="object"&&!Array.isArray(v))?v:{});
  s.completed=Array.isArray(s.completed)?s.completed.filter(x=>typeof x==="string").slice(0,12):[];
@@ -24,7 +24,7 @@ function safeData(v){
  const habitKeys=Object.keys(s.habits).sort().slice(-90);s.habits=Object.fromEntries(habitKeys.map(k=>[k,s.habits[k]]));
  s.quizResults=Array.isArray(s.quizResults)?s.quizResults.slice(-40).map(x=>({date:String(x.date||"").slice(0,30),score:Number(x.score)||0,total:Number(x.total)||0,title:String(x.title||"Mini yarışma").slice(0,110)})):[];
  s.activityCompleted=Array.isArray(s.activityCompleted)?s.activityCompleted.filter(x=>typeof x==="string").slice(-150):[];
- s.font=(Number(s.font)||0)%3;
+ s.font=2;
  return s;
 }
 function codeValue(value){
@@ -169,7 +169,7 @@ function importGuest(){
 function renderAdminCodes(){
  return '<div class="tile" style="margin-top:16px"><div class="row" style="justify-content:space-between"><div><h3>👤 Öğrenci hesap kodları</h3><p>8. sınıf öğrencileri için tek kullanımlık, isimsiz giriş kodları oluştur.</p></div><span class="tag">Yöneticiye özel</span></div><div class="row"><button class="btn small primary" data-action="studentIssue:10">10 kod üret</button><button class="btn small light" data-action="studentIssue:30">30 kod üret</button><button class="btn small outline" data-action="studentListCodes">Kullanılmamış kodları göster</button></div><div id="studentAdminInfo"></div><div id="studentCodeList">'+(lastIssued.length?codesMarkup(lastIssued,"Üretilen kodlar"):unclaimed.length?codesMarkup(unclaimed,"Kullanılmamış kodlar"):"")+'</div><hr style="border:0;border-top:1px solid var(--line);margin:23px 0"><h3>Öğrenci şifresini sıfırla</h3><p>Şifresini unutan öğrencinin kodunu yazın. Yeni geçici şifre yalnızca burada gösterilir.</p><div class="row"><input id="studentResetCode" class="student-reset-input" placeholder="LGS-XXXX-XXXX-XXXX" maxlength="25" style="border:1px solid #d0dee8;border-radius:11px;padding:11px;min-width:210px;max-width:100%"><button class="btn small outline" data-action="studentReset">Geçici şifre oluştur</button></div><div id="studentResetResult">'+(resetSecret?'<div class="note good">'+esc(resetSecret)+'</div>':"")+'</div><div class="note warn">Bu kodların öğrencilere güvenli biçimde iletilmesi gerekir. Kodlara öğrenci adını veya başka kişisel bilgi eklemeyin.</div></div>';
 }
-function codesMarkup(codes,head){return '<div class="note good"><strong>'+esc(head)+' ('+codes.length+')</strong><div class="row" style="margin-top:9px"><button class="btn small outline" data-action="studentCopyCodes">Kodları kopyala</button></div><textarea readonly id="studentCodesArea" style="margin-top:9px;width:100%;min-height:130px;font:13px monospace;border:1px solid #b8d3dc;border-radius:9px;padding:10px">'+codes.map(esc).join("\n")+'</textarea></div>'}
+function codesMarkup(codes,head){return '<div class="note good"><strong>'+esc(head)+' ('+codes.length+')</strong><div class="row" style="margin-top:9px"><button class="btn small outline" data-action="studentCopyCodes">Kodları kopyala</button></div><textarea readonly id="studentCodesArea" style="margin-top:9px;width:100%;min-height:130px;font:13px Georgia,serif;border:1px solid #b8d3dc;border-radius:9px;padding:10px">'+codes.map(esc).join("\n")+'</textarea></div>'}
 async function issue(n){const r=await edge({op:"issue",count:n},true);lastIssued=r.codes||[];unclaimed=[];const e=$("#studentCodeList");if(e)e.innerHTML=codesMarkup(lastIssued,"Yeni kodlar");info("Yeni kodlar oluşturuldu. Bunları güvenli biçimde öğrencilere dağıtabilirsiniz.",true)}
 async function listCodes(){
  const a=JSON.parse(sessionStorage.getItem("lgs_admin_session")||"null");
